@@ -23,12 +23,12 @@ global KEY
 # This key will serve all examples in this document.
 #KEY = os.environ['FACE_SUBSCRIPTION_KEY']
 
-KEY = '38de244540d8487284753d5d3bc5f013'
+KEY = '12f952f3b226421aa2019ab14740b123'
 
 # Set the FACE_ENDPOINT environment variable with the endpoint from your Face service in Azure.
 # This endpoint will be used in all examples in this quickstart.
 global ENDPOINT
-ENDPOINT = "https://FUCKKKKKK.cognitiveservices.azure.com/face/v1.0/detect?returnFaceId=true&returnFaceLandmarks=true&returnFaceAttributes=[age,gender,glasses]&recognitionModel=recognition_02&returnRecognitionModel=false&detectionModel=detection_01"
+ENDPOINT = "https://testface19025.cognitiveservices.azure.com/face/v1.0/detect?returnFaceId=true&returnFaceLandmarks=true&returnFaceAttributes=[age,gender,glasses]&recognitionModel=recognition_02&returnRecognitionModel=false&detectionModel=detection_01"
 
 global face_client
 face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
@@ -60,7 +60,7 @@ def captureImageFromVideo():
     
     while True:
 
-        file_name = 'Brian'
+        file_name = 'Emilee'
         # Capture frame-by-frame
         ret, frame = video_capture.read()
         frame = cv2.resize(frame,(960,720),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
@@ -122,10 +122,10 @@ def getText(faceDictionary):
     return (left,top)
 
 def azureConnect():
-    name = 'Brian'
+    name = 'Emilee'
 
     #creates new person in persongroup
-    new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= 'Brian', user_data=None, recognition_model='recognition_02', custom_headers=None, raw=False)
+    new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= 'Emilee', user_data=None, recognition_model='recognition_02', custom_headers=None, raw=False)
     
     #assigns name of person in the persongroup
 
