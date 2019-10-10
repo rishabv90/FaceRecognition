@@ -38,7 +38,7 @@ face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
 # You can call list_person_groups to print a list of preexisting PersonGroups.
 # SOURCE_PERSON_GROUP_ID should be all lowercase and alphanumeric. For example, 'mygroupname' (dashes are OK).
 global PERSON_GROUP_ID
-PERSON_GROUP_ID = 'test'
+PERSON_GROUP_ID = 'test1'
 
 
 ''' 
@@ -60,7 +60,7 @@ def captureImageFromVideo():
     
     while True:
 
-        file_name = 'Emilee'
+        file_name = 'Brian'
         # Capture frame-by-frame
         ret, frame = video_capture.read()
         frame = cv2.resize(frame,(960,720),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
@@ -83,7 +83,6 @@ def captureImageFromVideo():
             faces = face_client.face.detect_with_stream(image, return_face_id=True, return_face_landmarks=True, return_face_attributes=['age', 'gender', 'headPose', 'smile', 'facialHair', 'glasses', 'emotion'], recognition_model='recognition_02', return_recognition_model=False, detection_model='detection_01', custom_headers=None, raw=False, callback=None)
     
             rectanle = faces[0].face_rectangle
-            time.sleep(.5)
 
             if ((rectanle.height > 200) and (rectanle.width> 200)):
                 #only keep picture if race rectangle is bigger than 200 x 200 (azure reccomends)
@@ -122,10 +121,10 @@ def getText(faceDictionary):
     return (left,top)
 
 def azureConnect():
-    name = 'Emilee'
+    name = 'Brian'
 
     #creates new person in persongroup
-    new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= 'Emilee', user_data=None, recognition_model='recognition_02', custom_headers=None, raw=False)
+    new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= 'Brian', user_data=None, recognition_model='recognition_02', custom_headers=None, raw=False)
     
     #assigns name of person in the persongroup
 
@@ -159,14 +158,12 @@ def azureConnect():
             break
         elif (training_status.status is TrainingStatusType.failed):
             sys.exit('Training the person group has failed.')
-        time.sleep(5)
     
 
     return
 
 def main():
     captureImageFromVideo()
-    time.sleep(15)
     azureConnect()
     return
 main()
