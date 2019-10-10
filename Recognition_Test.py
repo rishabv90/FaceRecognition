@@ -25,12 +25,12 @@ global KEY
 # Set the FACE_SUBSCRIPTION_KEY environment variable with your key as the value.
 # This key will serve all examples in this document.
 #KEY = os.environ['FACE_SUBSCRIPTION_KEY']
-KEY = '38de244540d8487284753d5d3bc5f013'
+KEY = '12f952f3b226421aa2019ab14740b123'
 
 # Set the FACE_ENDPOINT environment variable with the endpoint from your Face service in Azure.
 # This endpoint will be used in all examples in this quickstart.
 global ENDPOINT
-ENDPOINT = "https://FUCKKKKKK.cognitiveservices.azure.com/face/v1.0/detect?returnFaceId=true&returnFaceLandmarks=true&returnFaceAttributes=[age,gender,glasses]&recognitionModel=recognition_02&returnRecognitionModel=false&detectionModel=detection_01"
+ENDPOINT = "https://testface19025.cognitiveservices.azure.com/face/v1.0/detect?returnFaceId=true&returnFaceLandmarks=true&returnFaceAttributes=[age,gender,glasses]&recognitionModel=recognition_02&returnRecognitionModel=false&detectionModel=detection_01"
 
 global face_client
 face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
