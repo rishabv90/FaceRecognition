@@ -51,8 +51,8 @@ def getRectangle(faceDictionary):
 def getText(faceDictionary):
     #function used to get text location from detected face object
     rect = faceDictionary.face_rectangle
-    left = rect.left
-    top = rect.top - 10
+    left = rect.left - 20
+    top = rect.top - 20
     return (left,top)
 
 
@@ -105,16 +105,17 @@ def connect():
             names = [] #stores names of person from .indentify ()
             confidence =[] #stores confidence of person from .indentify()
             if not results:
-                print('No person identified in the person group for faces from the {}.'.format(os.path.basename(image.name)))
+                print('No person identified in the person group'.format(os.path.basename(image.name)))
             for person in results:
                 if person.candidates != []:
-                    print('Person for face ID {} is identified in {} with a confidence of {}.'.format(person.face_id, os.path.basename(image.name), person.candidates[0].confidence)) # Get topmost confidence score
+                   
                     
                     #.get() used to return person object in persongroup
                     temp = face_client.person_group_person.get(PERSON_GROUP_ID, person.candidates[0].person_id, custom_headers=None, raw=False)
 
                     names.append(temp.name)
                     confidence.append(person.candidates[0].confidence)
+                    print('Person: {}    Confidence: {}.'.format(temp.name, person.candidates[0].confidence)) # Get topmost confidence score
                 else:
                     
                     results.remove(person)
@@ -136,8 +137,9 @@ def connect():
             font = cv2.FONT_HERSHEY_PLAIN
             #cv2.putText(frame,'OpenCV Tuts!',(x,y), font, 1,(200,255,155), 1, cv2.LINE_AA)
             face_attributes = face.face_attributes
-            text = str(face_attributes.age) + ' ' + face_attributes.gender + ' ' + face_attributes.glasses + ' ' + names[count] + ' '+ str(confidence[count])
-            cv2.putText(frame,text,getText(face),font, 1,(1,1,1), 1, cv2.LINE_AA)
+            conf = confidence[count] * 100
+            text =  names[count] + ' Confidence: '+ str(conf) + '% ' + str(face_attributes.age) + ' '  + face_attributes.glasses
+            cv2.putText(frame,text,getText(face),font, 1.5,(200,0,0), 1, cv2.LINE_AA)
             count += 1 
         
         cv2.imshow('Video', frame)
