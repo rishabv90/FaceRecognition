@@ -74,7 +74,7 @@ def connect():
 
         
         #take picture ever time i = 200
-        if i == 200:
+        if i == 50:
             i = 0
             #change the code below to match the file directory of current visual student project
             name = '/Users/Brian/source/repos/Face group/Face group/frame.jpg'
