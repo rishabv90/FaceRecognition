@@ -36,7 +36,7 @@ global face_client
 face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
 
 global PERSON_GROUP_ID
-PERSON_GROUP_ID = 'test'
+PERSON_GROUP_ID = 'test1'
 
 
 def getRectangle(faceDictionary):
