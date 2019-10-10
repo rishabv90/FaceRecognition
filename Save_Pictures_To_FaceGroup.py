@@ -38,7 +38,7 @@ face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
 # You can call list_person_groups to print a list of preexisting PersonGroups.
 # SOURCE_PERSON_GROUP_ID should be all lowercase and alphanumeric. For example, 'mygroupname' (dashes are OK).
 global PERSON_GROUP_ID
-PERSON_GROUP_ID = 'test1'
+PERSON_GROUP_ID = 'test'
 
 
 ''' 
@@ -49,7 +49,10 @@ print('Person group:', PERSON_GROUP_ID)
 
 #(ONLY UNCOMMENT WHEN MAKING NEW PERSON GROUP)
 #face_client.person_group.create(person_group_id=PERSON_GROUP_ID, name=PERSON_GROUP_ID,recognition_model='recognition_02', custom_headers=None, raw=False)
-   
+ 
+#used to store name of person which is also used as file name
+global Name
+Name = 'Hunter'
 
 def captureImageFromVideo():
     
@@ -57,18 +60,16 @@ def captureImageFromVideo():
     
   
     i = 1 #used to increment the number of pictures taken
-    
+    j = 0
     while True:
 
-        file_name = 'Brian'
         # Capture frame-by-frame
         ret, frame = video_capture.read()
         frame = cv2.resize(frame,(960,720),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
         cv2.imshow('Video', frame)
-    
-        if cv2.waitKey(1) & 0xFF == ord('c'):
-            
-            file_name = '/Users/Brian/source/repos/Face group/Face group/' + file_name + str(i) + '.jpg'
+        if j == 2:
+            j = 0
+            file_name = '/Users/Brian/source/repos/Face group/Face group/' + Name + str(i) + '.jpg'
 
             print ('Creating...' + file_name)
             cv2.imwrite(file_name, frame)
@@ -92,13 +93,13 @@ def captureImageFromVideo():
                 image.close()
                 os.remove(file_name)
             
-        if i == 10:
+        if i == 30:
             #takes 10 images
             break
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-        
+        j+=1
     video_capture.release()
     cv2.destroyAllWindows()
     return
@@ -121,21 +122,20 @@ def getText(faceDictionary):
     return (left,top)
 
 def azureConnect():
-    name = 'Brian'
 
     #creates new person in persongroup
-    new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= 'Brian', user_data=None, recognition_model='recognition_02', custom_headers=None, raw=False)
+    new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= Name, user_data=None, recognition_model='recognition_02', custom_headers=None, raw=False)
     
     #assigns name of person in the persongroup
 
-    new_person.name = name
+    new_person.name = Name
     
 
     '''
     Detect faces and register to correct person
     '''
     # Find all jpeg images in working directory
-    images = [file for file in glob.glob('*.jpg') if file.startswith(name)]
+    images = [file for file in glob.glob('*.jpg') if file.startswith(Name)]
     print('Detected images: ',images)
 
     # Adds images to person in persongroup
@@ -167,4 +167,5 @@ def main():
     azureConnect()
     return
 main()
+
 
