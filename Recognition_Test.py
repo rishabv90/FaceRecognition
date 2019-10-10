@@ -51,7 +51,7 @@ def getRectangle(faceDictionary):
 def getText(faceDictionary):
     #function used to get text location from detected face object
     rect = faceDictionary.face_rectangle
-    left = rect.left - 20
+    left = rect.left - (int(rect.width/2))
     top = rect.top - 20
     return (left,top)
 
@@ -137,9 +137,9 @@ def connect():
             font = cv2.FONT_HERSHEY_PLAIN
             #cv2.putText(frame,'OpenCV Tuts!',(x,y), font, 1,(200,255,155), 1, cv2.LINE_AA)
             face_attributes = face.face_attributes
-            conf = confidence[count] * 100
+            conf = int(confidence[count] * 100)
             text =  names[count] + ' Confidence: '+ str(conf) + '% ' + str(face_attributes.age) + ' '  + face_attributes.glasses
-            cv2.putText(frame,text,getText(face),font, 1.5,(200,0,0), 1, cv2.LINE_AA)
+            cv2.putText(frame,text,getText(face),font, 1.5,(400,400,400), 1, cv2.LINE_AA)
             count += 1 
         
         cv2.imshow('Video', frame)
