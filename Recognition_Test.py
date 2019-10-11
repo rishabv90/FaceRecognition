@@ -36,7 +36,7 @@ global face_client
 face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
 
 global PERSON_GROUP_ID
-PERSON_GROUP_ID = 'test1'
+PERSON_GROUP_ID = 'test'
 
 
 def getRectangle(faceDictionary):
@@ -73,8 +73,8 @@ def connect():
         
 
         
-        #take picture ever time i = 200
-        if i == 50:
+        #take picture ever time i = 25 (only used this cuz my computer cant process it fast enough)
+        if i == 25:
             i = 0
             #change the code below to match the file directory of current visual student project
             name = '/Users/Brian/source/repos/Face group/Face group/frame.jpg'
@@ -130,7 +130,7 @@ def connect():
             rectangle = getRectangle(face)
             v1 = rectangle[0]
             v2 = rectangle[1]
-            cv2.rectangle(frame,v1,v2,(150, 140, 150), 2)
+            
             #cv2.rectangle(frame, (x, y), (x+w, y+h), (150, 140, 150), 2)
 
             #draws string on image
@@ -138,8 +138,13 @@ def connect():
             #cv2.putText(frame,'OpenCV Tuts!',(x,y), font, 1,(200,255,155), 1, cv2.LINE_AA)
             face_attributes = face.face_attributes
             conf = int(confidence[count] * 100)
+            if conf >= 95:
+                color = (0,150,0)
+            else:
+                color = (0,0,150)
             text =  names[count] + ' Confidence: '+ str(conf) + '% ' + str(face_attributes.age) + ' '  + face_attributes.glasses
-            cv2.putText(frame,text,getText(face),font, 1.5,(400,400,400), 1, cv2.LINE_AA)
+            cv2.rectangle(frame,v1,v2,color, 1)
+            cv2.putText(frame,text,getText(face),font, 1.5,color, 1, cv2.LINE_AA)
             count += 1 
         
         cv2.imshow('Video', frame)
