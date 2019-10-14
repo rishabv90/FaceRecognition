@@ -52,7 +52,7 @@ print('Person group:', PERSON_GROUP_ID)
  
 #used to store name of person which is also used as file name
 global Name
-Name = 'Brian'
+Name = 'John'
 
 def captureImageFromVideo():
     
@@ -81,19 +81,23 @@ def captureImageFromVideo():
 
         # Detect faces
         faces = face_client.face.detect_with_stream(image, return_face_id=True, return_face_landmarks=True, return_face_attributes=['age', 'gender', 'headPose', 'smile', 'facialHair', 'glasses', 'emotion'], recognition_model='recognition_02', return_recognition_model=False, detection_model='detection_01', custom_headers=None, raw=False, callback=None)
-    
-        rectanle = faces[0].face_rectangle
+        if faces != []:
+            rectanle = faces[0].face_rectangle
 
-        if ((rectanle.height > 200) and (rectanle.width> 200)):
-            #only keep picture if race rectangle is bigger than 200 x 200 (azure reccomends)
-            i+=1
+            if ((rectanle.height > 200) and (rectanle.width> 200)):
+                #only keep picture if race rectangle is bigger than 200 x 200 (azure reccomends)
+                i+=1
+            else:
+                #remove image 
+                image.close()
+                os.remove(file_name)
         else:
             #remove image 
             image.close()
             os.remove(file_name)
             
         if i == 30:
-            #takes 10 images
+            #takes 30 images
             break
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
