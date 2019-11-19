@@ -38,7 +38,7 @@ face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
 # You can call list_person_groups to print a list of preexisting PersonGroups.
 # SOURCE_PERSON_GROUP_ID should be all lowercase and alphanumeric. For example, 'mygroupname' (dashes are OK).
 global PERSON_GROUP_ID
-PERSON_GROUP_ID = 'test'
+PERSON_GROUP_ID = 't'
 
 
 ''' 
@@ -52,7 +52,12 @@ print('Person group:', PERSON_GROUP_ID)
  
 #used to store name of person which is also used as file name
 global Name
-Name = 'John'
+Name = 'Brian'
+
+#used to store the file path for all saved images
+global path
+path = '/Users/Brian/source/repos/Face group/Face group/'
+
 
 def captureImageFromVideo():
     
@@ -68,13 +73,12 @@ def captureImageFromVideo():
         cv2.imshow('Video', frame)
         
         
-        file_name = '/Users/Brian/source/repos/Face group/Face group/' + Name + str(i) + '.jpg'
+        file_name = path + Name + str(i) + '.jpg'
 
         print ('Creating...' + file_name)
         cv2.imwrite(file_name, frame)
             
         IMAGES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-
             
         image_array = glob.glob(os.path.join(IMAGES_FOLDER, file_name))
         image = open(image_array[0], 'r+b')
@@ -137,13 +141,21 @@ def azureConnect():
     Detect faces and register to correct person
     '''
     # Find all jpeg images in working directory
-    images = [file for file in glob.glob('*.jpg') if file.startswith(Name)]
-    print('Detected images: ',images)
+    
 
     # Adds images to person in persongroup
-    for image in images:
-        b = open(image, 'r+b')
-        face_client.person_group_person.add_face_from_stream(PERSON_GROUP_ID, new_person.person_id, b)
+    IMAGES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+    
+    
+    for i in range(1,30):
+        file_name = path + Name + str(i) + '.jpg'
+        image_array = glob.glob(os.path.join(IMAGES_FOLDER, file_name))
+        print(image_array)
+        image = open(image_array[0], 'r+b')
+        face_client.person_group_person.add_face_from_stream(PERSON_GROUP_ID, new_person.person_id, image)
+        image.close()
+        
+        os.remove(file_name)
     ''' 
     Train PersonGroup
     '''
@@ -169,5 +181,4 @@ def main():
     azureConnect()
     return
 main()
-
 
