@@ -1,11 +1,10 @@
 '''
-
 Reference links:
-#uickstart:
-https://docs.microsoft.com/en-us/azure/cognitive-services/face/quickstarts/python-sdk
-Face operations:
-https://docs.microsoft.com/en-us/python/api/azure-cognitiveservices-vision-face/azure.cognitiveservices.vision.face.operations?view=azure-python
 
+    #quickstart:
+    https://docs.microsoft.com/en-us/azure/cognitive-services/face/quickstarts/python-sdk
+    Face operations:
+    https://docs.microsoft.com/en-us/python/api/azure-cognitiveservices-vision-face/azure.cognitiveservices.vision.face.operations?view=azure-python
 '''
 
 
@@ -22,7 +21,6 @@ global KEY
 # Set the FACE_SUBSCRIPTION_KEY environment variable with your key as the value.
 # This key will serve all examples in this document.
 #KEY = os.environ['FACE_SUBSCRIPTION_KEY']
-
 KEY = '12f952f3b226421aa2019ab14740b123'
 
 # Set the FACE_ENDPOINT environment variable with the endpoint from your Face service in Azure.
@@ -38,38 +36,57 @@ face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
 # You can call list_person_groups to print a list of preexisting PersonGroups.
 # SOURCE_PERSON_GROUP_ID should be all lowercase and alphanumeric. For example, 'mygroupname' (dashes are OK).
 global PERSON_GROUP_ID
-PERSON_GROUP_ID = 't'
 
 
 ''' 
 Create the PersonGroup
 '''
 # Create empty Person Group. Person Group ID must be lower case, alphanumeric, and/or with '-', '_'.
-print('Person group:', PERSON_GROUP_ID)
-
 #(ONLY UNCOMMENT WHEN MAKING NEW PERSON GROUP)
 #face_client.person_group.create(person_group_id=PERSON_GROUP_ID, name=PERSON_GROUP_ID,recognition_model='recognition_02', custom_headers=None, raw=False)
  
 #used to store name of person which is also used as file name
-global Name
-Name = 'Brian'
 
 #used to store the file path for all saved images
 global path
 path = '/Users/Brian/source/repos/Face group/Face group/'
 
+    
+if input('New person group? (Y/N): ').lower() == 'y':
+    
+    print()
+    #note that person group id needs to be lower case
+    PERSON_GROUP_ID = input('Enter person group name: ').lower()
+    print()
 
-def captureImageFromVideo():
-    
+    face_client.person_group.create(person_group_id=PERSON_GROUP_ID, name=PERSON_GROUP_ID,recognition_model='recognition_02', custom_headers=None, raw=False)
+else:
+    print()
+    person_groups = face_client.person_group.list(start=None, top=1000, return_recognition_model=False, custom_headers=None, raw=False)
+    for i in range(0,len(person_groups)):
+        print(str(i+1) + '. ',person_groups[i].name)
+
+    print()
+    index = input('Enter the number for the corresponding person group you want to add to: ')
+    PERSON_GROUP_ID = person_groups[int(index)-1].name
+    print()
+global Name
+Name = input("Enter your name: ")
+print()    
+
+
+
+def main():
+    '''
+    The following code caputres a video using opencv, creates a new person in a person group, and adds the images to that person
+    '''
     video_capture = cv2.VideoCapture(0)
-    
-  
     i = 1 #used to increment the number of pictures taken
     while True:
 
         # Capture frame-by-frame
         ret, frame = video_capture.read()
-        frame = cv2.resize(frame,(960,720),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
+        #frame = cv2.resize(frame,(1280,720),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
         cv2.imshow('Video', frame)
         
         
@@ -90,6 +107,7 @@ def captureImageFromVideo():
 
             if ((rectanle.height > 200) and (rectanle.width> 200)):
                 #only keep picture if race rectangle is bigger than 200 x 200 (azure reccomends)
+
                 i+=1
             else:
                 #remove image 
@@ -100,42 +118,19 @@ def captureImageFromVideo():
             image.close()
             os.remove(file_name)
             
-        if i == 30:
-            #takes 30 images
+        if i == 5:
+            #takes 50 images
             break
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+            video_capture.release()
+            cv2.destroyAllWindows()
+            sys.exit()
     video_capture.release()
     cv2.destroyAllWindows()
-    return
-
-def getRectangle(faceDictionary):
-    #function used to get rectangle dimensions from detected face object
-    rect = faceDictionary.face_rectangle
-    left = rect.left
-    top = rect.top
-    bottom = left + rect.height
-    right = top + rect.width
-    return ((left, top), (bottom, right))
-
-def getText(faceDictionary):
-    #function used to get text location from detected face object
-
-    rect = faceDictionary.face_rectangle
-    left = rect.left
-    top = rect.top - 10
-    return (left,top)
-
-def azureConnect():
-
-    #creates new person in persongroup
+    
     new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= Name, user_data=None, recognition_model='recognition_02', custom_headers=None, raw=False)
-    
-    #assigns name of person in the persongroup
-
     new_person.name = Name
-    
 
     '''
     Detect faces and register to correct person
@@ -147,15 +142,18 @@ def azureConnect():
     IMAGES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)))
     
     
-    for i in range(1,30):
+    for i in range(1,5):
+        print()
         file_name = path + Name + str(i) + '.jpg'
         image_array = glob.glob(os.path.join(IMAGES_FOLDER, file_name))
-        print(image_array)
+        print('Adding: ',image_array[0])
         image = open(image_array[0], 'r+b')
         face_client.person_group_person.add_face_from_stream(PERSON_GROUP_ID, new_person.person_id, image)
         image.close()
-        
+        print('Removing: ',image_array[0])
         os.remove(file_name)
+        print()
+
     ''' 
     Train PersonGroup
     '''
@@ -175,10 +173,4 @@ def azureConnect():
     
 
     return
-
-def main():
-    captureImageFromVideo()
-    azureConnect()
-    return
 main()
-
