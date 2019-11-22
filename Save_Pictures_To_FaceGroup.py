@@ -155,9 +155,15 @@ def main():
     for i in range(1,5):
         file_name = path + Name + str(i) + '.jpg'
         image_array = glob.glob(os.path.join(IMAGES_FOLDER, file_name))
-        print('Removing: ',image_array[0])
-        os.remove(file_name)
-    print()
+
+        try:
+            print('Removing: ',image_array[0])
+            os.remove(file_name)
+        except:
+            print('Didnt remove: ',file_name)
+
+    
+    
 
     ''' 
     Train PersonGroup
