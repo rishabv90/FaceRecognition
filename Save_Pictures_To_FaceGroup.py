@@ -98,34 +98,35 @@ def main():
         IMAGES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)))
             
         image_array = glob.glob(os.path.join(IMAGES_FOLDER, file_name))
-        image = open(image_array[0], 'r+b')
+        if image_array:
+            image = open(image_array[0], 'r+b')
 
-        # Detect faces
-        faces = face_client.face.detect_with_stream(image, return_face_id=True, return_face_landmarks=True, return_face_attributes=['age', 'gender', 'headPose', 'smile', 'facialHair', 'glasses', 'emotion'], recognition_model='recognition_02', return_recognition_model=False, detection_model='detection_01', custom_headers=None, raw=False, callback=None)
-        if faces != []:
-            rectanle = faces[0].face_rectangle
+            # Detect faces
+            faces = face_client.face.detect_with_stream(image, return_face_id=True, return_face_landmarks=True, return_face_attributes=['age', 'gender', 'headPose', 'smile', 'facialHair', 'glasses', 'emotion'], recognition_model='recognition_02', return_recognition_model=False, detection_model='detection_01', custom_headers=None, raw=False, callback=None)
+            if faces != []:
+                rectanle = faces[0].face_rectangle
 
-            if ((rectanle.height > 200) and (rectanle.width> 200)):
-                #only keep picture if race rectangle is bigger than 200 x 200 (azure reccomends)
+                if ((rectanle.height > 200) and (rectanle.width> 200)):
+                    #only keep picture if race rectangle is bigger than 200 x 200 (azure reccomends)
 
-                i+=1
+                    i+=1
+                else:
+                    #remove image 
+                    image.close()
+                    os.remove(file_name)
             else:
                 #remove image 
                 image.close()
                 os.remove(file_name)
-        else:
-            #remove image 
-            image.close()
-            os.remove(file_name)
             
-        if i == 5:
-            #takes 50 images
-            break
+            if i == 5:
+                #takes 50 images
+                break
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            video_capture.release()
-            cv2.destroyAllWindows()
-            sys.exit()
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                video_capture.release()
+                cv2.destroyAllWindows()
+                sys.exit()
     video_capture.release()
     cv2.destroyAllWindows()
     
