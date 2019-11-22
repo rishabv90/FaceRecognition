@@ -36,24 +36,16 @@ global face_client
 face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
 
 global PERSON_GROUP_ID
-PERSON_GROUP_ID = 'test'
 
 
-def getRectangle(faceDictionary):
-    #function used to get rectangle dimensions from detected face object
-    rect = faceDictionary.face_rectangle
-    left = rect.left
-    top = rect.top
-    bottom = left + rect.height
-    right = top + rect.width
-    return ((left, top), (bottom, right))
+person_groups = face_client.person_group.list(start=None, top=1000, return_recognition_model=False, custom_headers=None, raw=False)
+for i in range(0,len(person_groups)):
+    print(str(i+1) + '. ',person_groups[i].name)
 
-def getText(faceDictionary):
-    #function used to get text location from detected face object
-    rect = faceDictionary.face_rectangle
-    left = rect.left - (int(rect.width/2))
-    top = rect.top - 20
-    return (left,top)
+print()
+index = input('Enter the number for the corresponding person group you want to select: ')
+PERSON_GROUP_ID = person_groups[int(index)-1].name
+print()
 
 
 def connect():
@@ -62,12 +54,18 @@ def connect():
     faces = [] #stores face objects
     i = 0
     video_capture = cv2.VideoCapture(0)
+    
+    #video_capture.set(cv2.CAP_PROP_FPS, 30)
+    #video_capture.set(3,720)
+    #video_capture.set(4,480)
+    
+
     while True:
         
         # Capture frame-by-frame
         ret, frame = video_capture.read() #takes a picture of current frame
 
-        frame = cv2.resize(frame,(960,720),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
+        #frame = cv2.resize(frame,(1920,1080),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         results = [] #stores IdentifyResult objects
         
@@ -88,7 +86,7 @@ def connect():
             # Get test image
             test_image_array = glob.glob(os.path.join(IMAGES_FOLDER, group_photo))
             image = open(test_image_array[0], 'r+b')
-
+            print(IMAGES_FOLDER)
             # Detect faces
             face_ids = []
             faces = face_client.face.detect_with_stream(image, return_face_id=True, return_face_landmarks=True, return_face_attributes=['age', 'gender', 'headPose', 'smile', 'facialHair', 'glasses', 'emotion'], recognition_model='recognition_02', return_recognition_model=False, detection_model='detection_01', custom_headers=None, raw=False, callback=None)
@@ -126,10 +124,7 @@ def connect():
         count = 0 #used as incrementor for name, confidence lists
         for face in faces:
             
-            #draws rectangle on image
-            rectangle = getRectangle(face)
-            v1 = rectangle[0]
-            v2 = rectangle[1]
+            
             
             #cv2.rectangle(frame, (x, y), (x+w, y+h), (150, 140, 150), 2)
 
@@ -143,9 +138,22 @@ def connect():
                     color = (0,150,0)
                 else:
                     color = (0,0,150)
+                
                 text =  names[count] + ' Confidence: '+ str(conf) + '% ' + str(face_attributes.age) + ' '  + face_attributes.glasses
+                rect = face.face_rectangle
+                left = rect.left
+                top = rect.top
+                bottom = left + rect.height
+                right = top + rect.width
+
+                tleft = rect.left - (int(rect.width/2))
+                ttop = rect.top - 20
+                dim = (tleft,ttop)
+
+                v1 = (left, top)
+                v2 = (bottom, right)
                 cv2.rectangle(frame,v1,v2,color, 1)
-                cv2.putText(frame,text,getText(face),font, 1.5,color, 1, cv2.LINE_AA)
+                cv2.putText(frame,text,dim,font, 1.5,color, 1, cv2.LINE_AA)
                 count += 1 
         
         cv2.imshow('Video', frame)
