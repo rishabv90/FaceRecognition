@@ -67,7 +67,7 @@ else:
         print(str(i+1) + '. ',person_groups[i].name)
 
     print()
-    index = input('Enter the number for the corresponding person group you want to add to: ')
+    index = input('Enter the number for the corresponding number for the person group you want to add to: ')
     PERSON_GROUP_ID = person_groups[int(index)-1].name
     print()
 global Name
@@ -143,16 +143,19 @@ def main():
     
     
     for i in range(1,5):
-        print()
         file_name = path + Name + str(i) + '.jpg'
         image_array = glob.glob(os.path.join(IMAGES_FOLDER, file_name))
         print('Adding: ',image_array[0])
         image = open(image_array[0], 'r+b')
         face_client.person_group_person.add_face_from_stream(PERSON_GROUP_ID, new_person.person_id, image)
         image.close()
+    print()
+   
+    for i in range(1,5):
+        file_name = path + Name + str(i) + '.jpg'
         print('Removing: ',image_array[0])
         os.remove(file_name)
-        print()
+    print()
 
     ''' 
     Train PersonGroup
