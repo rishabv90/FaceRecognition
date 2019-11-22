@@ -67,7 +67,7 @@ else:
         print(str(i+1) + '. ',person_groups[i].name)
 
     print()
-    index = input('Enter the number for the corresponding number for the person group you want to add to: ')
+    index = input('Enter the number for the corresponding person group you want to add to: ')
     PERSON_GROUP_ID = person_groups[int(index)-1].name
     print()
 global Name
