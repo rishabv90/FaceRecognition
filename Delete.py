@@ -21,47 +21,48 @@ ENDPOINT = "https://testface19025.cognitiveservices.azure.com/face/v1.0/detect?r
 global face_client
 face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
 
+while True:
+    person_groups = face_client.person_group.list(start=None, top=1000, return_recognition_model=False, custom_headers=None, raw=False)
+    dic = {}
 
-person_groups = face_client.person_group.list(start=None, top=1000, return_recognition_model=False, custom_headers=None, raw=False)
-dic = {}
+    for PersonGroupObj in person_groups:
+        dic[PersonGroupObj.name] = []
 
-for PersonGroupObj in person_groups:
-    dic[PersonGroupObj.name] = []
+        people = face_client.person_group_person.list(PersonGroupObj.name, start=None, top=None, custom_headers=None, raw=False)
+        for p in people:
+            dic[PersonGroupObj.name].append([p.name,p.person_id])
 
-    people = face_client.person_group_person.list(PersonGroupObj.name, start=None, top=None, custom_headers=None, raw=False)
-    for p in people:
-        dic[PersonGroupObj.name].append([p.name,p.person_id])
-
-keys = list(dic.keys())
+    keys = list(dic.keys())
 
 
-if input('Do you want to delete a person group? (Y/N)').lower() == 'y':
-    i = 1
-    for key in keys:
-        print(str(i) + '. ' + key)
-        i+=1
-    num = input("Enter the number for the corresponding person group that you want to delete: ")
-    num = int(num) - 1
-    person_group_id = keys[num]
-    face_client.person_group.delete(person_group_id, custom_headers=None, raw=False)
-    print('Deleted person_group_id: ',person_group_id)
+    if input('Do you want to delete a person group? (Y/N)').lower() == 'y':
+        i = 1
+        for key in keys:
+            print(str(i) + '. ' + key)
+            i+=1
+        num = input("Enter the number for the corresponding person group that you want to delete: ")
+        num = int(num) - 1
+        person_group_id = keys[num]
+        face_client.person_group.delete(person_group_id, custom_headers=None, raw=False)
+        print('Deleted person_group_id: ',person_group_id)
 
-else:
-    i = 1
-    for key in keys:
-        print(str(i) + '. ' + key)
-        i+=1
-    num = input("Enter the number for the corresponding person group that you want to delete a person from: ")
-    print()
-    num = int(num) - 1
-    i = 1
-    print('People')
-    for p in dic[keys[num]]:
-        print(str(i) + '. ' + p[0])
-        i += 1
-    num2 = input("Enter the number for the person you want to delte: ")
-    num2 = int(num2) - 1
-    person_group_id = keys[num]
-    person_id = p[1]
-    face_client.person_group_person.delete(person_group_id, person_id, custom_headers=None, raw=False)
-    print('Deleted')
+    else:
+        i = 1
+        for key in keys:
+            print(str(i) + '. ' + key)
+            i+=1
+        num = input("Enter the number for the corresponding person group that you want to delete a person from: ")
+        print()
+        num = int(num) - 1
+        i = 1
+        print('People')
+        for p in dic[keys[num]]:
+            print(str(i) + '. ' + p[0])
+            i += 1
+        num2 = input("Enter the number for the person you want to delte: ")
+        num2 = int(num2) - 1
+        person_group_id = keys[num]
+        person_id = p[1]
+        face_client.person_group_person.delete(person_group_id, person_id, custom_headers=None, raw=False)
+        print('Deleted')
+        
