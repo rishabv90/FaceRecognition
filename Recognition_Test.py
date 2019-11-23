@@ -38,13 +38,8 @@ face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
 global PERSON_GROUP_ID
 
 
-person_groups = face_client.person_group.list(start=None, top=1000, return_recognition_model=False, custom_headers=None, raw=False)
-for i in range(0,len(person_groups)):
-    print(str(i+1) + '. ',person_groups[i].name)
 
-print()
-index = input('Enter the number for the corresponding person group you want to select: ')
-PERSON_GROUP_ID = person_groups[int(index)-1].name
+PERSON_GROUP_ID = 'test'
 print()
 
 
