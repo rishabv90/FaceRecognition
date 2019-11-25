@@ -61,8 +61,8 @@ while True:
             i += 1
         num2 = input("Enter the number for the person you want to delte: ")
         num2 = int(num2) - 1
-        person_group_id = keys[num2]
-        person_id = p[1]
+        person_group_id = keys[num]
+        person_id = dic[keys[num]][num2][1]
         face_client.person_group_person.delete(person_group_id, person_id, custom_headers=None, raw=False)
-        print('Deleted')
+        print('Deleted',dic[keys[num]][num2])
         
