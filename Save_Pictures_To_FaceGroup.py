@@ -36,6 +36,7 @@ face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
 # You can call list_person_groups to print a list of preexisting PersonGroups.
 # SOURCE_PERSON_GROUP_ID should be all lowercase and alphanumeric. For example, 'mygroupname' (dashes are OK).
 global PERSON_GROUP_ID
+PERSON_GROUP_ID = 'test'
 
 
 ''' 
@@ -51,28 +52,10 @@ Create the PersonGroup
 global path
 path = '/Users/Brian/source/repos/Face group/Face group/'
 
-    
-if input('New person group? (Y/N): ').lower() == 'y':
-    
-    print()
-    #note that person group id needs to be lower case
-    PERSON_GROUP_ID = input('Enter person group name: ').lower()
-    print()
 
-    face_client.person_group.create(person_group_id=PERSON_GROUP_ID, name=PERSON_GROUP_ID,recognition_model='recognition_02', custom_headers=None, raw=False)
-else:
-    print()
-    person_groups = face_client.person_group.list(start=None, top=1000, return_recognition_model=False, custom_headers=None, raw=False)
-    for i in range(0,len(person_groups)):
-        print(str(i+1) + '. ',person_groups[i].name)
 
-    print()
-    index = input('Enter the number for the corresponding person group you want to add to: ')
-    PERSON_GROUP_ID = person_groups[int(index)-1].name
-    print()
 global Name
-Name = input("Enter your name: ")
-print()    
+Name = #set this equal to the user entered name from GUI
 
 
 
