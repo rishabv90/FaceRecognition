@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw
 from azure.cognitiveservices.vision.face import FaceClient
 from msrest.authentication import CognitiveServicesCredentials
 from azure.cognitiveservices.vision.face.models import TrainingStatusType, Person, SnapshotObjectType, OperationStatusType
-
+from Add_User import createNew
  
 global KEY
 # Set the FACE_SUBSCRIPTION_KEY environment variable with your key as the value.
@@ -193,12 +193,14 @@ class App:
             cv2.imwrite(path + "frame" + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
             
 def directNew():
-    f.destroy()
+    root.quit()
+    #f.destroy()
     f2 = Frame(root)
     obj = createNew()
     obj.addUser()
-    f2.pack()          
+    f2.pack()      
+    
 # Create a window and pass it to the Application object
 root = Tk()
 root.geometry("800x800+700+300")
-App(root, "Tkinter and OpenCV")
+App(root, "Facial Recognition")
