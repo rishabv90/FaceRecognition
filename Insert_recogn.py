@@ -168,10 +168,10 @@ class App:
 
         #TODO1: For now, it's after pressing the button, the window shows up
         #TODO2: Create status bar for login status
-        show = Button(leftFrame, text="Recognize faces", fg="white", bg="Red")
-        show.pack()
-        show.grid(padx=50, pady=50)
-        self.snapshot()
+        #show = Button(leftFrame, text="Recognize faces", fg="white", bg="Red")
+        #show.pack()
+        #show.grid(padx=50, pady=50)
+     
         self.delay = 5
         self.update()
         
@@ -185,12 +185,6 @@ class App:
             self.canvas.create_image(0, 0, image = self.photo, anchor = NW)
         self.window.after(self.delay, self.update)
 
-    def snapshot(self):
-         #Get a frame from the video source
-         ret, frame = self.vid.get_frame()
-         print("capture")
-         if ret:
-            cv2.imwrite(path + "frame" + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
             
 def directNew():
     root.quit()
