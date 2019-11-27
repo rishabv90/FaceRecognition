@@ -151,8 +151,8 @@ class App:
             
 
         #snapshot button
-        #self.btn_snapshot= Button(window, text="Snapshot", width=50, command=self.snapshot, bg="black", fg="white")
-        #self.btn_snapshot.pack(anchor=CENTER, expand=True)
+        self.btn_snapshot= Button(window, text="Add New User", width=50, command=self.snapshot, bg="black", fg="white")
+        self.btn_snapshot.pack(anchor=CENTER, expand=True)
         self.snapshot()
         self.delay = 5
         self.update()
