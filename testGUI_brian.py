@@ -55,7 +55,82 @@ class MyVideoCapture:
         if self.vid.isOpened():
             ret, frame = self.vid.read()
             if ret:
+                cv2.imwrite(path + "frame" + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
                 # Return a boolean success flag and the current frame converted to BGR
+                IMAGES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+                group_photo ='frame.jpg'
+                # Get test image
+                test_image_array = glob.glob(os.path.join(IMAGES_FOLDER, group_photo))
+                image = open(test_image_array[0], 'r+b')
+                print(IMAGES_FOLDER)
+                # Detect faces
+                face_ids = []
+                faces = face_client.face.detect_with_stream(image, return_face_id=True, return_face_landmarks=True, return_face_attributes=['age', 'gender', 'headPose', 'smile', 'facialHair', 'glasses', 'emotion'], recognition_model='recognition_02', return_recognition_model=False, detection_model='detection_01', custom_headers=None, raw=False, callback=None)
+            
+                for face in faces:
+                    #add face ids to face_ids list for .indentify() method
+                    face_ids.append(face.face_id)
+
+                # Identify faces
+                # Check to make sure face was detected
+                if face_ids != []:
+                    results = face_client.face.identify(face_ids, PERSON_GROUP_ID)
+                
+                names = [] #stores names of person from .indentify ()
+                confidence =[] #stores confidence of person from .indentify()
+                if not results:
+                    print('No person identified in the person group'.format(os.path.basename(image.name)))
+                for person in results:
+                    if person.candidates != []:
+                   
+                    
+                        #.get() used to return person object in persongroup
+                        temp = face_client.person_group_person.get(PERSON_GROUP_ID, person.candidates[0].person_id, custom_headers=None, raw=False)
+
+                        names.append(temp.name)
+                        confidence.append(person.candidates[0].confidence)
+                        print('Person: {}    Confidence: {}.'.format(temp.name, person.candidates[0].confidence)) # Get topmost confidence score
+                    else:
+                    
+                        results.remove(person)
+                   
+        
+                faces = faces[:len(results)] #trim faces to match length of results
+                print(confidence)
+                count = 0 #used as incrementor for name, confidence lists
+                for face in faces:
+            
+            
+            
+                    #cv2.rectangle(frame, (x, y), (x+w, y+h), (150, 140, 150), 2)
+
+                    #draws string on image
+                    font = cv2.FONT_HERSHEY_PLAIN
+                    #cv2.putText(frame,'OpenCV Tuts!',(x,y), font, 1,(200,255,155), 1, cv2.LINE_AA)
+                    face_attributes = face.face_attributes
+                    if confidence != []:
+                        conf = int(confidence[count] * 100)
+                        if conf >= 95:
+                            color = (0,150,0)
+                        else:
+                            color = (0,0,150)
+                
+                        text =  names[count] + ' Confidence: '+ str(conf) + '% ' + str(face_attributes.age) + ' '  + face_attributes.glasses
+                        rect = face.face_rectangle
+                        left = rect.left
+                        top = rect.top
+                        bottom = left + rect.height
+                        right = top + rect.width
+
+                        tleft = rect.left - (int(rect.width/2))
+                        ttop = rect.top - 20
+                        dim = (tleft,ttop)
+
+                        v1 = (left, top)
+                        v2 = (bottom, right)
+                        cv2.rectangle(frame,v1,v2,color, 1)
+                        cv2.putText(frame,text,dim,font, 1.5,color, 1, cv2.LINE_AA)
+                        count += 1 
                 return (ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             else:
                 return (ret, None)
@@ -79,7 +154,7 @@ class App:
         #self.btn_snapshot= Button(window, text="Snapshot", width=50, command=self.snapshot, bg="black", fg="white")
         #self.btn_snapshot.pack(anchor=CENTER, expand=True)
         self.snapshot()
-        self.delay = 15
+        self.delay = 5
         self.update()
         
         self.window.mainloop()
@@ -88,82 +163,6 @@ class App:
         #Get a frame from the video source
         ret, frame = self.vid.get_frame()
         if ret:
-            
-            IMAGES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-            group_photo ='frame.jpg'
-            # Get test image
-            test_image_array = glob.glob(os.path.join(IMAGES_FOLDER, group_photo))
-            image = open(test_image_array[0], 'r+b')
-            print(IMAGES_FOLDER)
-            # Detect faces
-            face_ids = []
-            faces = face_client.face.detect_with_stream(image, return_face_id=True, return_face_landmarks=True, return_face_attributes=['age', 'gender', 'headPose', 'smile', 'facialHair', 'glasses', 'emotion'], recognition_model='recognition_02', return_recognition_model=False, detection_model='detection_01', custom_headers=None, raw=False, callback=None)
-            
-            for face in faces:
-                #add face ids to face_ids list for .indentify() method
-                face_ids.append(face.face_id)
-
-            # Identify faces
-            # Check to make sure face was detected
-            if face_ids != []:
-                results = face_client.face.identify(face_ids, PERSON_GROUP_ID)
-                
-            names = [] #stores names of person from .indentify ()
-            confidence =[] #stores confidence of person from .indentify()
-            if not results:
-                print('No person identified in the person group'.format(os.path.basename(image.name)))
-            for person in results:
-                if person.candidates != []:
-                   
-                    
-                    #.get() used to return person object in persongroup
-                    temp = face_client.person_group_person.get(PERSON_GROUP_ID, person.candidates[0].person_id, custom_headers=None, raw=False)
-
-                    names.append(temp.name)
-                    confidence.append(person.candidates[0].confidence)
-                    print('Person: {}    Confidence: {}.'.format(temp.name, person.candidates[0].confidence)) # Get topmost confidence score
-                else:
-                    
-                    results.remove(person)
-                   
-        
-            faces = faces[:len(results)] #trim faces to match length of results
-            print(confidence)
-            count = 0 #used as incrementor for name, confidence lists
-            for face in faces:
-            
-            
-            
-                #cv2.rectangle(frame, (x, y), (x+w, y+h), (150, 140, 150), 2)
-
-                #draws string on image
-                font = cv2.FONT_HERSHEY_PLAIN
-                #cv2.putText(frame,'OpenCV Tuts!',(x,y), font, 1,(200,255,155), 1, cv2.LINE_AA)
-                face_attributes = face.face_attributes
-                if confidence != []:
-                    conf = int(confidence[count] * 100)
-                    if conf >= 95:
-                        color = (0,150,0)
-                    else:
-                        color = (0,0,150)
-                
-                    text =  names[count] + ' Confidence: '+ str(conf) + '% ' + str(face_attributes.age) + ' '  + face_attributes.glasses
-                    rect = face.face_rectangle
-                    left = rect.left
-                    top = rect.top
-                    bottom = left + rect.height
-                    right = top + rect.width
-
-                    tleft = rect.left - (int(rect.width/2))
-                    ttop = rect.top - 20
-                    dim = (tleft,ttop)
-
-                    v1 = (left, top)
-                    v2 = (bottom, right)
-                    cv2.rectangle(frame,v1,v2,color, 1)
-                    cv2.putText(frame,text,dim,font, 1.5,color, 1, cv2.LINE_AA)
-                    count += 1 
-        
             self.photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
             self.canvas.create_image(0, 0, image = self.photo, anchor = NW)
         self.window.after(self.delay, self.update)
