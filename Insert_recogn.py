@@ -35,6 +35,19 @@ PERSON_GROUP_ID = 'test'
 global path
 path = '/Users/facedetection/source/repos/Face_Rec/Face_Rec/'
 
+global statusString
+statusString = 'empty'
+# Create a window and pass it to the Application object
+root = Tk()
+global variable
+
+variable = StringVar()
+variable.set('empty')
+f = Frame(root)
+f.pack()
+
+root.geometry("800x500+700+300")
+
 class MyVideoCapture: 
     def __init__(self, video_source=0):
         #open the video source
@@ -44,6 +57,7 @@ class MyVideoCapture:
         # Get video source width and height
         self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
         self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        #self.window = root
   
     # Release the video source when the object is destroyed
     def __del__(self):
@@ -54,6 +68,7 @@ class MyVideoCapture:
     def get_frame(self):
         if self.vid.isOpened():
             ret, frame = self.vid.read()
+            results = []
             if ret:
                 cv2.imwrite(path + "frame" + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
                 # Return a boolean success flag and the current frame converted to BGR
@@ -66,7 +81,8 @@ class MyVideoCapture:
                 # Detect faces
                 face_ids = []
                 faces = face_client.face.detect_with_stream(image, return_face_id=True, return_face_landmarks=True, return_face_attributes=['age', 'gender', 'headPose', 'smile', 'facialHair', 'glasses', 'emotion'], recognition_model='recognition_02', return_recognition_model=False, detection_model='detection_01', custom_headers=None, raw=False, callback=None)
-            
+                global variable
+
                 for face in faces:
                     #add face ids to face_ids list for .indentify() method
                     face_ids.append(face.face_id)
@@ -80,6 +96,11 @@ class MyVideoCapture:
                 confidence =[] #stores confidence of person from .indentify()
                 if not results:
                     print('No person identified in the person group'.format(os.path.basename(image.name)))
+                    
+                    variable.set('No person identified in the person group')
+                    #global f
+                    #f.quit()
+
                 for person in results:
                     if person.candidates != []:
                    
@@ -99,7 +120,7 @@ class MyVideoCapture:
                 print(confidence)
                 count = 0 #used as incrementor for name, confidence lists
                 for face in faces:
-            
+          
             
             
                     #cv2.rectangle(frame, (x, y), (x+w, y+h), (150, 140, 150), 2)
@@ -112,8 +133,12 @@ class MyVideoCapture:
                         conf = int(confidence[count] * 100)
                         if conf >= 95:
                             color = (0,150,0)
+                            variable.set('Logging in: ' + names[count] + ' identified as ' + str(face_attributes.age) + 
+                                         ' years old and with ' + face_attributes.glasses)
+                            #root.quit()
                         else:
                             color = (0,0,150)
+                            variable.set('Not logging in, but found similar, so try to move closer or give better lighting')
                 
                         text =  names[count] + ' Confidence: '+ str(conf) + '% ' + str(face_attributes.age) + ' '  + face_attributes.glasses
                         rect = face.face_rectangle
@@ -142,16 +167,9 @@ class App:
         self.window.title(window_title)
         self.video_source = video_source
 
-        #open video source
-
-        self.vid = MyVideoCapture(video_source)
-        #create a canvas that can fit the above video source size
-        self.canvas = Canvas(self.window, width = self.vid.width, height = self.vid.height)
-        self.canvas.pack()
             
-        #add buttons
-        f = Frame(window)
-        f.pack()
+        #Add frame within window
+        global f
     
         #Containers
         leftFrame = Frame(f)
@@ -161,8 +179,25 @@ class App:
         rightFrame = Frame(f)
         rightFrame.pack(side=RIGHT)
 
+        #open video source
+
+        self.vid = MyVideoCapture(video_source)
+        #create a canvas that can fit the above video source size
+        self.canvas = Canvas(f, width = self.vid.width, height = self.vid.height)
+        self.canvas.pack()
+
+        #Text showing log in status
+        global variable
+        variable = StringVar()
+
+        #variable.set(statusString)
+        status = Label(bottomFrame, bd=1, relief=SUNKEN, anchor=W,
+                      textvariable=variable, width=100, fg="gray19", bg='ivory3')
+        status.pack()        
+
+
         #Direct to the add new user page
-        add = Button(rightFrame, text="Add User Button", fg="white", bg="black", command=directNew)
+        add = Button(rightFrame, text="Add User Button", fg="peach puff", bg="salmon1", command=directNew)
         add.pack()
         add.grid(padx=20, pady=20)
 
@@ -193,8 +228,6 @@ def directNew():
     obj = createNew()
     obj.addUser()
     f2.pack()      
-    
-# Create a window and pass it to the Application object
-root = Tk()
-root.geometry("800x800+700+300")
+
+#pass root to class "App"
 App(root, "Facial Recognition")
