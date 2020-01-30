@@ -1,15 +1,17 @@
 from tkinter import *
+from tkinter import ttk  
+
 import PIL.Image, PIL.ImageTk
 
 
-import asyncio, io, glob, os, sys, time, uuid, requests, cv2
+import asyncio, io, glob, os, sys, time, uuid, requests, cv2, time
 from urllib.parse import urlparse
 from io import BytesIO
 from PIL import Image, ImageDraw
 from azure.cognitiveservices.vision.face import FaceClient
 from msrest.authentication import CognitiveServicesCredentials
 from azure.cognitiveservices.vision.face.models import TrainingStatusType, Person, SnapshotObjectType, OperationStatusType
- 
+
 global KEY
 # Set the FACE_SUBSCRIPTION_KEY environment variable with your key as the value.
 # This key will serve all examples in this document.
@@ -19,7 +21,9 @@ KEY = '12f952f3b226421aa2019ab14740b123'
 # Set the FACE_ENDPOINT environment variable with the endpoint from your Face service in Azure.
 # This endpoint will be used in all examples in this quickstart.
 global ENDPOINT
-ENDPOINT = "https://testface19025.cognitiveservices.azure.com/face/v1.0/detect?returnFaceId=true&returnFaceLandmarks=true&returnFaceAttributes=[age,gender,glasses]&recognitionModel=recognition_02&returnRecognitionModel=false&detectionModel=detection_01"
+ENDPOINT = "https://testface19025.cognitiveservices.azure.com"
+
+
 
 global face_client
 face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
@@ -34,6 +38,12 @@ PERSON_GROUP_ID = 'test'
 global path
 path = '/Users/Brian/source/repos/Face group/Face group/'
 
+#To identify whether it is success or not
+
+
+# Create a window and pass it to the Application object
+
+
 class MyVideoCapture: 
     def __init__(self, video_source=0):
         #open the video source
@@ -43,13 +53,18 @@ class MyVideoCapture:
         # Get video source width and height
         self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
         self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        self.start_time = time.time()
+
+        #self.window = root
   
     # Release the video source when the object is destroyed
     def __del__(self):
         if self.vid.isOpened():
-            self.vid.release()
-        self.window.mainloop()
+            #print((time.time()-self.start_time))
 
+            self.vid.release()
+            
+        #self.window.mainloop()
     def frame(self):
         if self.vid.isOpened():
             ret, frame = self.vid.read()
@@ -57,8 +72,13 @@ class MyVideoCapture:
         else:
             return (ret, None)
     def get_frame(self):
+
+
         if self.vid.isOpened():
+            fps = self.vid.get(cv2.CAP_PROP_FPS)
+
             ret, frame = self.vid.read()
+            results = []
             if ret:
                 cv2.imwrite(path + "frame" + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
                 # Return a boolean success flag and the current frame converted to BGR
@@ -67,11 +87,10 @@ class MyVideoCapture:
                 # Get test image
                 test_image_array = glob.glob(os.path.join(IMAGES_FOLDER, group_photo))
                 image = open(test_image_array[0], 'r+b')
-                print(IMAGES_FOLDER)
                 # Detect faces
                 face_ids = []
                 faces = face_client.face.detect_with_stream(image, return_face_id=True, return_face_landmarks=True, return_face_attributes=['age', 'gender', 'headPose', 'smile', 'facialHair', 'glasses', 'emotion'], recognition_model='recognition_02', return_recognition_model=False, detection_model='detection_01', custom_headers=None, raw=False, callback=None)
-            
+
                 for face in faces:
                     #add face ids to face_ids list for .indentify() method
                     face_ids.append(face.face_id)
@@ -84,27 +103,35 @@ class MyVideoCapture:
                 names = [] #stores names of person from .indentify ()
                 confidence =[] #stores confidence of person from .indentify()
                 if not results:
-                    print('No person identified in the person group'.format(os.path.basename(image.name)))
+                    #print('No person identified in the person group'.format(os.path.basename(image.name)))
+                    variable.set('No person identified in the person group')
+                    #global f
+                    #f.quit()
+
                 for person in results:
                     if person.candidates != []:
                    
                     
                         #.get() used to return person object in persongroup
-                        temp = face_client.person_group_person.get(PERSON_GROUP_ID, person.candidates[0].person_id, custom_headers=None, raw=False)
+                        try:
+                            temp = face_client.person_group_person.get(PERSON_GROUP_ID, person.candidates[0].person_id, custom_headers=None, raw=False)
+                        
+                        except:
+                            print('Not in database')
+                            break
 
                         names.append(temp.name)
                         confidence.append(person.candidates[0].confidence)
-                        print('Person: {}    Confidence: {}.'.format(temp.name, person.candidates[0].confidence)) # Get topmost confidence score
+                        #print('Person: {}    Confidence: {}.'.format(temp.name, person.candidates[0].confidence)) # Get topmost confidence score
                     else:
                     
                         results.remove(person)
                    
         
                 faces = faces[:len(results)] #trim faces to match length of results
-                print(confidence)
                 count = 0 #used as incrementor for name, confidence lists
                 for face in faces:
-            
+          
             
             
                     #cv2.rectangle(frame, (x, y), (x+w, y+h), (150, 140, 150), 2)
@@ -117,9 +144,13 @@ class MyVideoCapture:
                         conf = int(confidence[count] * 100)
                         if conf >= 95:
                             color = (0,150,0)
+                            variable.set('Logging in: ' + names[count] + ' identified as ' + str(face_attributes.age) + 
+                                         ' years old and with ' + face_attributes.glasses)
+                            success.set('True')
                         else:
                             color = (0,0,150)
-                
+                            variable.set('Not logging in, but found similar, so try to move closer or give better lighting')
+
                         text =  names[count] + ' Confidence: '+ str(conf) + '% ' + str(face_attributes.age) + ' '  + face_attributes.glasses
                         rect = face.face_rectangle
                         left = rect.left
@@ -136,50 +167,61 @@ class MyVideoCapture:
                         cv2.rectangle(frame,v1,v2,color, 1)
                         cv2.putText(frame,text,dim,font, 1.5,color, 1, cv2.LINE_AA)
                         count += 1 
+                        image.close()
                 return (ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             else:
+                image.close()
+
                 return (ret, None)
         else:
             return (ret, None)
-from tkinter import *
 
 class createNew:
     def __init__(self):
         self._root = Tk()
         self.vid = MyVideoCapture(video_source=0)
+        self._n = StringVar()
         #root = Tk() ?
 
         #set size of window
         self._root.geometry("500x500") 
         
         #set the user input elements
-        self._name = Label(self._root, text="Name: ")
+        nameLable = Label(self._root, text="Name: ")
+        nameLable.pack()
         #password = Label(self._root, text="Password: ")
         #cfmPwd = Label(self._root, text="Confirm Password: ")
-        entry_1 = Entry(self._root)
+        nameEntry = Entry(self._root,textvariable = self._n)
         #entry_2 = Entry(self._root)
         #entry_3 = Entry(self._root)
-        self._name.grid(row=0, sticky=E) #sticky E = east, right aligned
+        nameLable.grid(row=0, sticky=E) #sticky E = east, right aligned
         #password.grid(row=1, sticky=E)
         #cfmPwd.grid(row=2, sticky=E)
-        entry_1.grid(row=0, column=1)
+        nameEntry.grid(row=0, column=1)
         #entry_2.grid(row=1, column=1)
         #entry_3.grid(row=2, column=1)
-     
         #submit button
         b = Button(self._root, text="Submit",fg="white", bg="black", command=self.addUser)
-
         b.grid(columnspan=2)
+
+        
+
 
         self._root.mainloop()
 
     def addUser(self):
-            
+        Name = self._n.get()
+
+        i = 1 #used to increment the number of pictures taken
+        #ENDPOINT = "https://testface19025.cognitiveservices.azure.com/face/v1.0/persongroups/test/persons/"
+        #face_client2 = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
+
         while True:
+
             # Capture frame-by-frame
             ret, frame = self.vid.frame()
+
             #frame = cv2.resize(frame,(1280,720),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
-            #cv2.imshow('Video', frame)
         
         
             file_name = path + Name + str(i) + '.jpg'
@@ -216,13 +258,11 @@ class createNew:
                     break
 
                 if cv2.waitKey(1) & 0xFF == ord('q'):
-                    video_capture.release()
-                    cv2.destroyAllWindows()
+                    del self.vid
                     sys.exit()
-        video_capture.release()
-        cv2.destroyAllWindows()
-    
-        new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= Name, user_data=None, recognition_model='recognition_02', custom_headers=None, raw=False)
+        del self.vid
+        
+        new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= Name, user_data=None, custom_headers=None, raw=False)
         new_person.name = Name
 
         '''
@@ -270,27 +310,68 @@ class createNew:
             print("Training status: {}.".format(training_status.status))
             print()
             if (training_status.status is TrainingStatusType.succeeded):
-                break
+                self._root.destroy()
+                return
             elif (training_status.status is TrainingStatusType.failed):
                 sys.exit('Training the person group has failed.')
+    
+class deleteUser:
+    def __init__(self):
+        self._root = Tk()
+        self._root.geometry("800x500+700+300")
+        self._tree = ttk.Treeview(self._root,columns = ('#1'))
+        self._tree.heading('#0',text = 'Name: ')
+        self._tree.heading('#1',text = 'Person ID:')
+        self._tree.column('#0', width = 300)
+        self._tree.column('#1', width = 300)
+        person_groups = face_client.person_group.list(start=None, top=1000, return_recognition_model=False, custom_headers=None, raw=False)
+        dic = {}
+
+        for PersonGroupObj in person_groups:
+            dic[PersonGroupObj.name] = []
+
+            people = face_client.person_group_person.list(PersonGroupObj.name, start=None, top=None, custom_headers=None, raw=False)
+            for p in people:
+                dic[PersonGroupObj.name].append([p.name,p.person_id])
+
+        keys= list(dic.keys())
+        for i in range(0,len(dic[keys[0]])):
+            print(dic)
+            self._tree.insert('','0','item' + str(i), text = dic[keys[0]][i][0], values = (dic[keys[0]][i][1]))
+           
+
+        self._tree.pack()
+        selectionB = Button(self._root,text = 'Select',command = self.selection)
+        selectionB.pack()
+        self._root.mainloop()
+
+        return
+   
 
         
+        
+    def selection(self):
+        temp = self._tree.selection()
+        print(temp)
+        info = self._tree.item(temp[0])
+        person_group_id = 'test'
+        person_id = info['values'][0]
+        print(person_group_id,person_id)
+        face_client.person_group_person.delete(person_group_id, person_id, custom_headers=None, raw=False)        
+        self._root.destroy() 
+        return
+    
+
 class App:
-    def __init__(self, window, window_title, video_source=0):
+    def __init__(self, window, window_title,frame,var,success, video_source=0):
         self.window = window
         self.window.title(window_title)
         self.video_source = video_source
+        root.bind('<Escape>', lambda e: root.destroy())
 
-        #open video source
-
-        self.vid = MyVideoCapture(video_source)
-        #create a canvas that can fit the above video source size
-        self.canvas = Canvas(self.window, width = self.vid.width, height = self.vid.height)
-        self.canvas.pack()
             
-        #add buttons
-        f = Frame(window)
-        f.pack()
+        #Add frame within window
+        self._f = frame
     
         #Containers
         leftFrame = Frame(f)
@@ -299,44 +380,76 @@ class App:
         bottomFrame.pack(side=BOTTOM)
         rightFrame = Frame(f)
         rightFrame.pack(side=RIGHT)
+        
 
-        #Direct to the add new user page
-        add = Button(rightFrame, text="Add User Button", fg="white", bg="black", command=self.directNew)
-        add.pack()
-        add.grid(padx=20, pady=20)
+        #open video source
 
-        #TODO1: For now, it's after pressing the button, the window shows up
-        #TODO2: Create status bar for login status
-        #show = Button(leftFrame, text="Recognize faces", fg="white", bg="Red")
-        #show.pack()
-        #show.grid(padx=50, pady=50)
+        self.vid = MyVideoCapture(video_source)
+        #create a canvas that can fit the above video source size
+        self.canvas = Canvas(f, width = self.vid.width, height = self.vid.height)
+        self.canvas.pack()
+
+        #Text showing log in status
+        self._variable = var
+
+        self._success = success
+
+        #variable.set(statusString)
+        status = Label(bottomFrame, bd=1, relief=SUNKEN, anchor=W,
+                      textvariable=self._variable, width=100, fg="gray19", bg='ivory3')
+        status.pack()        
+
+        menu = Menu(self.window)
+        self.window.config(menu = menu)
+        submenu = Menu(menu)
+
+        menu.add_cascade(label = 'Menu',menu = submenu)
+        submenu.add_command(label = 'Add User',command = self.directNew)
+        submenu.add_command(label = 'Delete User', command = self.directDelete)
      
-        self.delay = 5
+        self.delay = 10
         self.update()
-        root.bind('<Escape>', lambda e: root.destroy())
-
+        
         self.window.mainloop()
     
     def update(self):
-        #Get a frame from the video source
-        ret, frame = self.vid.get_frame()
-        if ret:
-            self.photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
-            self.canvas.create_image(0, 0, image = self.photo, anchor = NW)
-        self.window.after(self.delay, self.update)
+        #print('success: %s' % success)
+        if self._success.get() == 'False':
+            #Get a frame from the video source
+            ret, frame = self.vid.get_frame()
+            if ret:
+                self.photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
+                self.canvas.create_image(0, 0, image = self.photo, anchor = NW)
+            self.window.after(self.delay, self.update)
+        else:
+            del self.vid
 
+        
             
     def directNew(self):
     
         self.window.destroy()
-        del self.vid
-        #f.destroy()
-        #f2 = Frame(root)
+
         obj = createNew()
-        f2.pack()
-        return
-    
-# Create a window and pass it to the Application object
-root = Tk()
-root.geometry("800x800+700+300")
-App(root, "Facial Recognition")
+
+        return 
+    def directDelete(self):
+        
+
+        self.window.destroy()
+        
+        obj = deleteUser()
+        return 
+
+
+while True:
+
+    root = Tk()
+    variable = StringVar()
+    success = StringVar()
+    success.set('False')
+    f = Frame(root)
+    f.pack()
+
+    root.geometry("800x500+700+300")
+    App(root, "Facial Recognition",frame = f,var = variable,success = success)
