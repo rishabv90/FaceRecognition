@@ -179,52 +179,51 @@ class MyVideoCapture:
 class createNew:
     def __init__(self):
         self._root = Tk()
-        self.vid = MyVideoCapture(video_source=0)
+        self._root.geometry("800x500+700+300")
+
+        self._vid = MyVideoCapture(video_source=0)
         self._n = StringVar()
         #root = Tk() ?
-
+        fra = Frame(self._root)
+        left = Frame(self._root)
+        left.pack(side = LEFT)
+        right = Frame(self._root)
+        right.pack(side = RIGHT)
+        self._canvas = Canvas(self._root, width = self._vid.width, height = self._vid.height)
+        self._canvas.pack()
         #set size of window
-        self._root.geometry("500x500") 
-        
+        self._i = 1
         #set the user input elements
-        nameLable = Label(self._root, text="Name: ")
+        nameLable = Label(right, text="Name: ")
         nameLable.pack()
         #password = Label(self._root, text="Password: ")
         #cfmPwd = Label(self._root, text="Confirm Password: ")
-        nameEntry = Entry(self._root,textvariable = self._n)
+        nameEntry = Entry(right,textvariable = self._n)
+        nameEntry.pack()
+
         #entry_2 = Entry(self._root)
         #entry_3 = Entry(self._root)
-        nameLable.grid(row=0, sticky=E) #sticky E = east, right aligned
         #password.grid(row=1, sticky=E)
         #cfmPwd.grid(row=2, sticky=E)
-        nameEntry.grid(row=0, column=1)
         #entry_2.grid(row=1, column=1)
         #entry_3.grid(row=2, column=1)
         #submit button
-        b = Button(self._root, text="Submit",fg="white", bg="black", command=self.addUser)
-        b.grid(columnspan=2)
-
-        
-
+        b = Button(right, text="Submit",fg="white", bg="black", command=self.addUser)
+        b.pack()
 
         self._root.mainloop()
+        return
 
+        
+        
     def addUser(self):
         Name = self._n.get()
-
-        i = 1 #used to increment the number of pictures taken
-        #ENDPOINT = "https://testface19025.cognitiveservices.azure.com/face/v1.0/persongroups/test/persons/"
-        #face_client2 = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
-
-        while True:
-
-            # Capture frame-by-frame
-            ret, frame = self.vid.frame()
-
-            #frame = cv2.resize(frame,(1280,720),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
-        
-        
-            file_name = path + Name + str(i) + '.jpg'
+        if self._i < 5:
+            ret, frame = self._vid.frame()
+            self._photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
+            self._canvas.create_image(0, 0, image = self._photo,anchor = NW)
+            
+            file_name = path + Name + str(self._i) + '.jpg'
 
             print ('Creating...' + file_name)
             cv2.imwrite(file_name, frame)
@@ -243,7 +242,8 @@ class createNew:
                     if ((rectanle.height > 200) and (rectanle.width> 200)):
                         #only keep picture if race rectangle is bigger than 200 x 200 (azure reccomends)
 
-                        i+=1
+                        self._i+=1
+
                     else:
                         #remove image 
                         image.close()
@@ -253,15 +253,20 @@ class createNew:
                     image.close()
                     os.remove(file_name)
             
-                if i == 5:
-                    #takes 50 images
-                    break
+            
 
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    del self.vid
-                    sys.exit()
-        del self.vid
-        
+        if self._i == 5:
+
+            del self._vid
+            self.azure()
+            return
+
+        self._root.after(10,self.addUser)
+        return
+            
+    def azure(self):
+        Name = self._n.get()
+
         new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= Name, user_data=None, custom_headers=None, raw=False)
         new_person.name = Name
 
@@ -314,12 +319,14 @@ class createNew:
                 return
             elif (training_status.status is TrainingStatusType.failed):
                 sys.exit('Training the person group has failed.')
+        return
     
 class deleteUser:
     def __init__(self):
         self._root = Tk()
         self._root.geometry("800x500+700+300")
         self._tree = ttk.Treeview(self._root,columns = ('#1'))
+        self._tree.configure(selectmode = "extended")
         self._tree.heading('#0',text = 'Name: ')
         self._tree.heading('#1',text = 'Person ID:')
         self._tree.column('#0', width = 300)
@@ -341,7 +348,7 @@ class deleteUser:
            
 
         self._tree.pack()
-        selectionB = Button(self._root,text = 'Select',command = self.selection)
+        selectionB = Button(self._root,text = 'Select',command = self.selections)
         selectionB.pack()
         self._root.mainloop()
 
@@ -350,15 +357,17 @@ class deleteUser:
 
         
         
-    def selection(self):
-        temp = self._tree.selection()
-        print(temp)
-        info = self._tree.item(temp[0])
-        person_group_id = 'test'
-        person_id = info['values'][0]
-        print(person_group_id,person_id)
-        face_client.person_group_person.delete(person_group_id, person_id, custom_headers=None, raw=False)        
+    def selections(self):
+       
+        for el in self._tree.selection():
+            info = self._tree.item(el)
+
+            person_group_id = 'test'
+            person_id = info['values'][0]
+            print(person_group_id,person_id)
+            face_client.person_group_person.delete(person_group_id, person_id, custom_headers=None, raw=False)        
         self._root.destroy() 
+           
         return
     
 
@@ -401,7 +410,7 @@ class App:
 
         menu = Menu(self.window)
         self.window.config(menu = menu)
-        submenu = Menu(menu)
+        submenu = Menu(menu,tearoff=0)
 
         menu.add_cascade(label = 'Menu',menu = submenu)
         submenu.add_command(label = 'Add User',command = self.directNew)
