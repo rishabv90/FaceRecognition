@@ -1,10 +1,9 @@
 from tkinter import *
 from tkinter import ttk  
-
 import PIL.Image, PIL.ImageTk
 
-
-import asyncio, io, glob, os, sys, time, uuid, requests, cv2, time
+from datetime import *
+import asyncio, io, glob, os, sys, time, uuid, requests, cv2
 from urllib.parse import urlparse
 from io import BytesIO
 from PIL import Image, ImageDraw
@@ -146,6 +145,14 @@ class MyVideoCapture:
                             color = (0,150,0)
                             variable.set('Logging in: ' + names[count] + ' identified as ' + str(face_attributes.age) + 
                                          ' years old and with ' + face_attributes.glasses)
+                            print(temp.user_data)
+
+                            data = temp.user_data.split(',')
+                            
+                            newData = datetime.now().strftime('%m/%d/%Y, %H:%M:%S') + ',' + data[-1]
+
+
+                            face_client.person_group_person.update(PERSON_GROUP_ID,temp.person_id,user_data = newData)
                             success.set('True')
                         else:
                             color = (0,0,150)
@@ -179,37 +186,31 @@ class MyVideoCapture:
 class createNew:
     def __init__(self):
         self._root = Tk()
-        self._root.geometry("800x500+700+300")
+        self._root.geometry("1400x900")
 
         self._vid = MyVideoCapture(video_source=0)
         self._n = StringVar()
-        #root = Tk() ?
-        fra = Frame(self._root)
-        left = Frame(self._root)
-        left.pack(side = LEFT)
-        right = Frame(self._root)
-        right.pack(side = RIGHT)
-        self._canvas = Canvas(self._root, width = self._vid.width, height = self._vid.height)
-        self._canvas.pack()
-        #set size of window
-        self._i = 1
-        #set the user input elements
-        nameLable = Label(right, text="Name: ")
-        nameLable.pack()
-        #password = Label(self._root, text="Password: ")
-        #cfmPwd = Label(self._root, text="Confirm Password: ")
-        nameEntry = Entry(right,textvariable = self._n)
-        nameEntry.pack()
+        self._type = StringVar()
 
-        #entry_2 = Entry(self._root)
-        #entry_3 = Entry(self._root)
-        #password.grid(row=1, sticky=E)
-        #cfmPwd.grid(row=2, sticky=E)
-        #entry_2.grid(row=1, column=1)
-        #entry_3.grid(row=2, column=1)
-        #submit button
-        b = Button(right, text="Submit",fg="white", bg="black", command=self.addUser)
-        b.pack()
+        self._canvas = Canvas(self._root, width = self._vid.width, height = self._vid.height)
+        self._canvas.grid(row = 0, column = 1)
+
+        framee = Frame(self._root)
+        framee.grid(row = 0,column =0)
+        
+        nameLable = Label(framee, text="User Type: ").grid(row = 0,column =0,sticky = 'W',pady = 5)
+
+        dropMenu = OptionMenu(framee,self._type,'Admin','User').grid(row = 0,column =1,pady = 5)
+
+        
+
+        self._i = 1
+        nameLable2 = Label(framee, text="Name: ").grid(row = 1,column =0,sticky = 'W',pady = 5)
+       
+        nameEntry = Entry(framee,textvariable = self._n).grid(row = 1,column = 1,pady = 5)
+
+        
+        b = Button(framee, text="Submit",fg="white", bg="black", command=self.addUser).grid(row = 2, column =1,pady = 5)
 
         self._root.mainloop()
         return
@@ -266,8 +267,11 @@ class createNew:
             
     def azure(self):
         Name = self._n.get()
-
-        new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= Name, user_data=None, custom_headers=None, raw=False)
+        data = ''
+        t = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
+        data = t + ',' + self._type.get()
+        print(data)
+        new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= Name, user_data=data, custom_headers=None, raw=False)
         new_person.name = Name
 
         '''
@@ -325,12 +329,20 @@ class deleteUser:
     def __init__(self):
         self._root = Tk()
         self._root.geometry("800x500+700+300")
-        self._tree = ttk.Treeview(self._root,columns = ('#1'))
+        self._tree = ttk.Treeview(self._root,columns = ('#1','#2','#3','#4'))
         self._tree.configure(selectmode = "extended")
         self._tree.heading('#0',text = 'Name: ')
-        self._tree.heading('#1',text = 'Person ID:')
-        self._tree.column('#0', width = 300)
-        self._tree.column('#1', width = 300)
+        self._tree.heading('#1',text = 'Person ID: ')
+        self._tree.heading('#2',text = 'Date: ')
+        self._tree.heading('#3',text = 'Time: ')
+        self._tree.heading('#4',text = 'Account Type: ')
+
+
+        self._tree.column('#0',anchor = 'center', width = 100)
+        self._tree.column('#1', anchor = 'center',width = 250)
+        self._tree.column('#2',anchor = 'center', width = 100)
+        self._tree.column('#3',anchor = 'center', width = 100)
+        self._tree.column('#4',anchor = 'center', width = 100)
         person_groups = face_client.person_group.list(start=None, top=1000, return_recognition_model=False, custom_headers=None, raw=False)
         dic = {}
 
@@ -339,12 +351,15 @@ class deleteUser:
 
             people = face_client.person_group_person.list(PersonGroupObj.name, start=None, top=None, custom_headers=None, raw=False)
             for p in people:
-                dic[PersonGroupObj.name].append([p.name,p.person_id])
-
-        keys= list(dic.keys())
+                data = p.user_data.split(',')
+                print(data)
+                dic[PersonGroupObj.name].append([p.name,p.person_id,data[0],data[1],data[2]])
+        print(dic)
+        keys= list(dic.keys())  
+        print(keys)
         for i in range(0,len(dic[keys[0]])):
-            print(dic)
-            self._tree.insert('','0','item' + str(i), text = dic[keys[0]][i][0], values = (dic[keys[0]][i][1]))
+            print(dic[keys[0]][i][0])
+            self._tree.insert('','0','item' + str(i), text = dic[keys[0]][i][0], values = (dic[keys[0]][i][1],dic[keys[0]][i][2],dic[keys[0]][i][3],dic[keys[0]][i][4]))
            
 
         self._tree.pack()
@@ -364,7 +379,6 @@ class deleteUser:
 
             person_group_id = 'test'
             person_id = info['values'][0]
-            print(person_group_id,person_id)
             face_client.person_group_person.delete(person_group_id, person_id, custom_headers=None, raw=False)        
         self._root.destroy() 
            
