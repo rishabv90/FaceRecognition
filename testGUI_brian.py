@@ -59,11 +59,10 @@ class MyVideoCapture:
     # Release the video source when the object is destroyed
     def __del__(self):
         if self.vid.isOpened():
-            #print((time.time()-self.start_time))
 
             self.vid.release()
+            return
             
-        #self.window.mainloop()
     def frame(self):
         if self.vid.isOpened():
             ret, frame = self.vid.read()
@@ -71,8 +70,8 @@ class MyVideoCapture:
         else:
             return (ret, None)
     def get_frame(self):
-
-
+        person_id = None
+        accountType = 'User'
         if self.vid.isOpened():
             fps = self.vid.get(cv2.CAP_PROP_FPS)
 
@@ -83,9 +82,12 @@ class MyVideoCapture:
                 # Return a boolean success flag and the current frame converted to BGR
                 IMAGES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)))
                 group_photo ='frame.jpg'
+
+
                 # Get test image
                 test_image_array = glob.glob(os.path.join(IMAGES_FOLDER, group_photo))
                 image = open(test_image_array[0], 'r+b')
+
                 # Detect faces
                 face_ids = []
                 faces = face_client.face.detect_with_stream(image, return_face_id=True, return_face_landmarks=True, return_face_attributes=['age', 'gender', 'headPose', 'smile', 'facialHair', 'glasses', 'emotion'], recognition_model='recognition_02', return_recognition_model=False, detection_model='detection_01', custom_headers=None, raw=False, callback=None)
@@ -102,16 +104,12 @@ class MyVideoCapture:
                 names = [] #stores names of person from .indentify ()
                 confidence =[] #stores confidence of person from .indentify()
                 if not results:
-                    #print('No person identified in the person group'.format(os.path.basename(image.name)))
                     variable.set('No person identified in the person group')
-                    #global f
-                    #f.quit()
+                    
 
                 for person in results:
                     if person.candidates != []:
-                   
-                    
-                        #.get() used to return person object in persongroup
+                 
                         try:
                             temp = face_client.person_group_person.get(PERSON_GROUP_ID, person.candidates[0].person_id, custom_headers=None, raw=False)
                         
@@ -121,7 +119,6 @@ class MyVideoCapture:
 
                         names.append(temp.name)
                         confidence.append(person.candidates[0].confidence)
-                        #print('Person: {}    Confidence: {}.'.format(temp.name, person.candidates[0].confidence)) # Get topmost confidence score
                     else:
                     
                         results.remove(person)
@@ -133,25 +130,23 @@ class MyVideoCapture:
           
             
             
-                    #cv2.rectangle(frame, (x, y), (x+w, y+h), (150, 140, 150), 2)
 
                     #draws string on image
                     font = cv2.FONT_HERSHEY_PLAIN
-                    #cv2.putText(frame,'OpenCV Tuts!',(x,y), font, 1,(200,255,155), 1, cv2.LINE_AA)
                     face_attributes = face.face_attributes
                     if confidence != []:
                         conf = int(confidence[count] * 100)
-                        if conf >= 95:
+                        if conf >= 90:
                             color = (0,150,0)
                             variable.set('Logging in: ' + names[count] + ' identified as ' + str(face_attributes.age) + 
                                          ' years old and with ' + face_attributes.glasses)
-                            print(temp.user_data)
 
                             data = temp.user_data.split(',')
-                            
-                            newData = datetime.now().strftime('%m/%d/%Y, %H:%M:%S') + ',' + data[-1]
+                            person_id = temp.person_id
+                            newData = datetime.now().strftime('%m/%d/%Y,%H:%M:%S,') + '--------,'  + data[-1]
+                           
 
-
+                            accountType = data[-1]
                             face_client.person_group_person.update(PERSON_GROUP_ID,temp.person_id,user_data = newData)
                             success.set('True')
                         else:
@@ -175,13 +170,13 @@ class MyVideoCapture:
                         cv2.putText(frame,text,dim,font, 1.5,color, 1, cv2.LINE_AA)
                         count += 1 
                         image.close()
-                return (ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                return (ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB),accountType,person_id)
             else:
                 image.close()
 
-                return (ret, None)
+                return (ret, None,accountType,person_id)
         else:
-            return (ret, None)
+            return (ret, None,accountType,person_id)
 
 class createNew:
     def __init__(self):
@@ -268,9 +263,10 @@ class createNew:
     def azure(self):
         Name = self._n.get()
         data = ''
-        t = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
-        data = t + ',' + self._type.get()
-        print(data)
+        t = datetime.now().strftime('%m/%d/%Y,%H:%M:%S,')
+        t2 = datetime.now().strftime('%H:%M:%S,')
+        data = t + t2 + self._type.get()
+        #print(data)
         new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= Name, user_data=data, custom_headers=None, raw=False)
         new_person.name = Name
 
@@ -329,13 +325,15 @@ class deleteUser:
     def __init__(self):
         self._root = Tk()
         self._root.geometry("800x500+700+300")
-        self._tree = ttk.Treeview(self._root,columns = ('#1','#2','#3','#4'))
+        self._tree = ttk.Treeview(self._root,columns = ('#1','#2','#3','#4','#5'))
         self._tree.configure(selectmode = "extended")
         self._tree.heading('#0',text = 'Name: ')
         self._tree.heading('#1',text = 'Person ID: ')
         self._tree.heading('#2',text = 'Date: ')
-        self._tree.heading('#3',text = 'Time: ')
-        self._tree.heading('#4',text = 'Account Type: ')
+        self._tree.heading('#3',text = 'Loggin Time: ')
+        self._tree.heading('#4',text = 'Log Out Time: ')
+
+        self._tree.heading('#5',text = 'Account Type: ')
 
 
         self._tree.column('#0',anchor = 'center', width = 100)
@@ -343,6 +341,7 @@ class deleteUser:
         self._tree.column('#2',anchor = 'center', width = 100)
         self._tree.column('#3',anchor = 'center', width = 100)
         self._tree.column('#4',anchor = 'center', width = 100)
+        self._tree.column('#5',anchor = 'center', width = 100)
         person_groups = face_client.person_group.list(start=None, top=1000, return_recognition_model=False, custom_headers=None, raw=False)
         dic = {}
 
@@ -352,14 +351,10 @@ class deleteUser:
             people = face_client.person_group_person.list(PersonGroupObj.name, start=None, top=None, custom_headers=None, raw=False)
             for p in people:
                 data = p.user_data.split(',')
-                print(data)
-                dic[PersonGroupObj.name].append([p.name,p.person_id,data[0],data[1],data[2]])
-        print(dic)
+                dic[PersonGroupObj.name].append([p.name,p.person_id,data[0],data[1],data[2],data[3]])
         keys= list(dic.keys())  
-        print(keys)
         for i in range(0,len(dic[keys[0]])):
-            print(dic[keys[0]][i][0])
-            self._tree.insert('','0','item' + str(i), text = dic[keys[0]][i][0], values = (dic[keys[0]][i][1],dic[keys[0]][i][2],dic[keys[0]][i][3],dic[keys[0]][i][4]))
+            self._tree.insert('','0','item' + str(i), text = dic[keys[0]][i][0], values = (dic[keys[0]][i][1],dic[keys[0]][i][2],dic[keys[0]][i][3],dic[keys[0]][i][4],dic[keys[0]][i][5]))
            
 
         self._tree.pack()
@@ -401,8 +396,8 @@ class App:
         leftFrame.pack(side=LEFT)
         bottomFrame = Frame(f)
         bottomFrame.pack(side=BOTTOM)
-        rightFrame = Frame(f)
-        rightFrame.pack(side=RIGHT)
+        self._rightFrame = Frame(f)
+        self._rightFrame.pack(side=RIGHT)
         
 
         #open video source
@@ -420,35 +415,49 @@ class App:
         #variable.set(statusString)
         status = Label(bottomFrame, bd=1, relief=SUNKEN, anchor=W,
                       textvariable=self._variable, width=100, fg="gray19", bg='ivory3')
-        status.pack()        
-
-        menu = Menu(self.window)
-        self.window.config(menu = menu)
-        submenu = Menu(menu,tearoff=0)
-
-        menu.add_cascade(label = 'Menu',menu = submenu)
-        submenu.add_command(label = 'Add User',command = self.directNew)
-        submenu.add_command(label = 'Delete User', command = self.directDelete)
-     
+        status.pack()      
+        print(self._success.get())
+            
         self.delay = 10
         self.update()
         
         self.window.mainloop()
-    
+        
     def update(self):
-        #print('success: %s' % success)
+
         if self._success.get() == 'False':
             #Get a frame from the video source
-            ret, frame = self.vid.get_frame()
+            ret, frame,self._accountType,self._person_id = self.vid.get_frame()
             if ret:
                 self.photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
                 self.canvas.create_image(0, 0, image = self.photo, anchor = NW)
             self.window.after(self.delay, self.update)
         else:
             del self.vid
+            print(self._accountType)
+            if self._accountType == 'Admin':
+                menu = Menu(self.window)
+                self.window.config(menu = menu)
+                submenu = Menu(menu,tearoff=0)
 
-        
-            
+                menu.add_cascade(label = 'Menu',menu = submenu)
+                submenu.add_command(label = 'Add User',command = self.directNew)
+                submenu.add_command(label = 'Delete User', command = self.directDelete)
+            b = Button(self._rightFrame,text="Log Out",fg="white", bg="black", command=self.logOut)
+            b.pack()
+
+        return
+    
+    def logOut(self):
+        person = face_client.person_group_person.get('test',self._person_id)
+        data = person.user_data.split(',')
+        newData = data[0] +  datetime.now().strftime(',%H:%M:%S,')  + data[-1]
+                           
+        face_client.person_group_person.update(PERSON_GROUP_ID,self._person_id,user_data = newData)
+
+        self.window.destroy()
+        return
+
     def directNew(self):
     
         self.window.destroy()
