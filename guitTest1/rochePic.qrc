@@ -1,0 +1,8 @@
+<RCC>
+  <qresource prefix="newPrefix">
+    <file>roche pic.png</file>
+  </qresource>
+  <qresource prefix="newPrefix">
+    <file>Webp.net-resizeimage.jpg</file>
+  </qresource>
+</RCC>
