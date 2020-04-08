@@ -8,6 +8,7 @@
 # Facial Recognition Page (START UP PAGE)
 
 from PySide2 import QtCore, QtGui, QtWidgets
+#from PyQt5 import QtCore, QtGui, QtWidgets
 from datetime import *
 import asyncio, io, glob, os, sys, time, uuid, requests, cv2
 from urllib.parse import urlparse
@@ -18,6 +19,9 @@ from msrest.authentication import CognitiveServicesCredentials
 from azure.cognitiveservices.vision.face.models import TrainingStatusType, Person, SnapshotObjectType, OperationStatusType
 import azure.cognitiveservices.speech as speechsdk
 import time
+
+import page2, page3, page5
+
 global KEY
 # Set the FACE_SUBSCRIPTION_KEY environment variable with your key as the value.
 # This key will serve all examples in this document.
@@ -44,9 +48,10 @@ global PERSON_GROUP_ID
 PERSON_GROUP_ID = 'test'
 
 global path
-#path = "/Users/Julia/Documents/HWs/SeniorDesign/guitTest1/"
-path = "/Users/Julia/source/repos/updateGUI/"
-import page2, page3, page5
+path = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+path = path.replace('C:','')
+path = path.replace('\\','/')
+path = path + '/'
 
 class MyVideoCapture: 
     def __init__(self, video_source=0):
@@ -86,13 +91,15 @@ class MyVideoCapture:
             if ret:
                 cv2.imwrite(path + "frame" + ".jpg",frame)
                 # Return a boolean success flag and the current frame converted to BGR
-                IMAGES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+                
                 group_photo ='frame.jpg'
 
-
                 # Get test image
-                test_image_array = glob.glob(os.path.join(IMAGES_FOLDER, group_photo))
-                print(IMAGES_FOLDER,path)
+                test_image_array = glob.glob(os.path.join(path, group_photo))
+                
+
+
+                print()
                 image = open(test_image_array[0], 'r+b')
 
                 # Detect faces
@@ -174,7 +181,6 @@ class MyVideoCapture:
                         finalPerson = names[count]
                         count += 1 
                         image.close()
-
                 return (test_image_array[0],accountType,person_id,flag,finalPerson)
             else:
                 
@@ -234,41 +240,51 @@ class Ui_MainWindow(object):
         self.timer.setSingleShot(False)
         self.timer.setInterval(100) # in milliseconds, so 5000 = 5 seconds
 
-        speech_recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config)
-        check = True
-
-        while check == True:
-            now = datetime.now().time()
-            if now.hour<17  and now.hour>=7:
-                time.sleep(3)
-                print("Please Instruct System to Begin Facial Recognition by saying 'Wake Up'")
-                result = speech_recognizer.recognize_once()
-
-            # Checks result.
-                if result.reason == speechsdk.ResultReason.RecognizedSpeech:
-                    if  result.text == 'Wake up.':
-                        print("Thank you for your input, the system will now begin facial recognition")
-                        self.timer.timeout.connect(self.update)
-                        check = False
-        
-                    else:
-                        print("Recognized: {}".format(result.text))
-                        print("This Statement is not a valid input for our system please try again")
-        
-                elif result.reason == speechsdk.ResultReason.NoMatch:
-                    print("No speech could be recognized: {}".format(result.no_match_details))
-                elif result.reason == speechsdk.ResultReason.Canceled:
-                    cancellation_details = result.cancellation_details
-                    print("Speech Recognition canceled: {}".format(cancellation_details.reason))
-                    if cancellation_details.reason == speechsdk.CancellationReason.Error:
-                        print("Error details: {}".format(cancellation_details.error_details))
-
-        #self.timer.timeout.connect(self.update)
-        self.timer.start()
+       
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        self.speech_recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config)
+        
+        self.timer2 = QtCore.QTimer(self.centralwidget)
+        self.timer2.setSingleShot(False)
+        self.timer2.setInterval(100)
+        self.timer2.start()
 
+        self.timer.start()
+        self.timer.timeout.connect(self.wakeUp)
+
+    def wakeUp(self):
+        
+        now = datetime.now().time()
+        if now.hour<17  and now.hour>=7:
+            self.label_6.setStyleSheet("font-size:12pt; color: green;")
+            self.label_6.setText("Please Instruct system to begin Facial Recognition by saying <b>'Wake Up'</b>")
+            time.sleep(3)
+            print("Please Instruct System to Begin Facial Recognition by saying 'Wake Up'")
+            result = self.speech_recognizer.recognize_once()
+
+        # Checks result.
+            if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+                if  result.text == 'Wake up.':
+                    print("Thank you for your input, the system will now begin facial recognition")
+                    self.timer.stop()
+                    self.timer2.timeout.connect(self.update)
+
+                    check = False
+        
+                else:
+                    print("Recognized: {}".format(result.text))
+                    print("This Statement is not a valid input for our system please try again")
+        
+            elif result.reason == speechsdk.ResultReason.NoMatch:
+                print("No speech could be recognized: {}".format(result.no_match_details))
+            elif result.reason == speechsdk.ResultReason.Canceled:
+                cancellation_details = result.cancellation_details
+                print("Speech Recognition canceled: {}".format(cancellation_details.reason))
+                if cancellation_details.reason == speechsdk.CancellationReason.Error:
+                    print("Error details: {}".format(cancellation_details.error_details))
+        return
     def goToManual(self): #direct to manual login page
         #MainWindow.close()
         MainWindow.hide()
@@ -286,46 +302,48 @@ class Ui_MainWindow(object):
         self.label_3.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:14pt;\">Status :</span></p></body></html>"))
         self.label_4.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:24pt; font-weight:600;\">Facial Recognition Login</span></p></body></html>"))
         #self.label_6.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:14pt;\">Insert Status here XXXXXXXXXXXXXX</span></p></body></html>"))
-        self.label_6.setStyleSheet(_translate("MainWindow", "font-size:11pt; color:blue;"))
-        self.label_6.setText(_translate("MainWindow", "Please present your face, the live video feed will start soon"))
+        self.label_6.setStyleSheet(_translate("MainWindow", "font-size:12pt; color:blue;"))
+        self.label_6.setText(_translate("MainWindow","The System is starting up..."))
+        self.label_7.setStyleSheet(_translate("MainWindow", "font-size:20pt; color:black; border: black solid 1px"))
+        self.label_7.setText(_translate("MainWindow", "The video feed will pop out soon..."))
         self.menuExit.setTitle(_translate("MainWindow", "Exit"))
-        self.statusbar.setStyleSheet("font-size:15pt; color: blue;")
+        self.statusbar.setStyleSheet("font-size:11pt; color: black;")
         self.statusbar.showMessage("Please present your face in front of the camera without accessories covering your face to allow the system to identify your face")
     
     def update(self):
-            if self.flag == False:
-                imagePath,self._accountType,self._person_id,self.flag, self._identifiedPerson = self.vid.get_frame()
-                print(self.flag,self._accountType)
+        if self.flag == False:
+            imagePath,self._accountType,self._person_id,self.flag, self._identifiedPerson = self.vid.get_frame()
+            print(self.flag,self._accountType)
                             
-                if imagePath != None:
-                    self.label_6.setStyleSheet("font-size:11pt; color: red;")
-                    self.label_6.setText("Please show your face clearly to the camera or check the lighting.")
-                    self.image = QtGui.QPixmap(imagePath)
-                    self.label_7.setPixmap(self.image)
-            else:
-                self.timer.stop()
-                self.showStatus(self._identifiedPerson, self._accountType)
-                self.label_6.setStyleSheet("font-size:11pt; color: green;")
-                self.label_6.setText("Successfully loggin you in")
-                time.sleep(3)
-                #self.showLogin(self._identifiedPerson)
+            if imagePath != None:
+                self.label_6.setStyleSheet("font-size:11pt; color: red;")
+                self.label_6.setText("Please show your face clearly to the camera or check the lighting.")
+                self.image = QtGui.QPixmap(imagePath)
+                self.label_7.setPixmap(self.image)
+        else:
+            self.timer2.stop()
+            self.showStatus(self._identifiedPerson, self._accountType)
+            self.label_6.setStyleSheet("font-size:11pt; color: green;")
+            self.label_6.setText("Successfully logging you in")
+            time.sleep(3)
+            #self.showLogin(self._identifiedPerson)
                 
-                del self.vid
-                if (self._accountType == 'Admin'):
-                    #MainWindow.close()
-                    MainWindow.hide()
-                    self.window = QtWidgets.QMainWindow()
-                    self.ui = page5.Ui_MainWindow(self._identifiedPerson)
-                    self.ui.setupUi(self.window)
-                    self.window.show()
+            del self.vid
+            if (self._accountType == 'Admin'):
+                #MainWindow.close()
+                MainWindow.hide()
+                self.window = QtWidgets.QMainWindow()
+                self.ui = page5.Ui_MainWindow(self._identifiedPerson)
+                self.ui.setupUi(self.window)
+                self.window.show()
      
-                else:
-                    #MainWindow.close()
-                    MainWindow.hide()
-                    self.window = QtWidgets.QMainWindow()
-                    self.ui = page3.Ui_MainWindow(self._identifiedPerson)
-                    self.ui.setupUi(self.window)
-                    self.window.show()
+            else:
+                #MainWindow.close()
+                MainWindow.hide()
+                self.window = QtWidgets.QMainWindow()
+                self.ui = page3.Ui_MainWindow(self._identifiedPerson)
+                self.ui.setupUi(self.window)
+                self.window.show()
             return
 
     def showStatus(self, person, type): #TODO

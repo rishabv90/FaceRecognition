@@ -7,6 +7,7 @@
 # WARNING! All changes made in this file will be lost!
 # Add user's page (for admin use only)
 
+#from PyQt5 import QtCore, QtGui, QtWidgets
 from PySide2 import QtCore, QtGui, QtWidgets
 from datetime import *
 import asyncio, io, glob, os, sys, time, uuid, requests, cv2
@@ -16,6 +17,8 @@ from PIL import Image, ImageDraw
 from azure.cognitiveservices.vision.face import FaceClient
 from msrest.authentication import CognitiveServicesCredentials
 from azure.cognitiveservices.vision.face.models import TrainingStatusType, Person, SnapshotObjectType, OperationStatusType
+import page2, page3, page1
+
 global KEY
 # Set the FACE_SUBSCRIPTION_KEY environment variable with your key as the value.
 # This key will serve all examples in this document.
@@ -39,9 +42,9 @@ global PERSON_GROUP_ID
 PERSON_GROUP_ID = 'test'
 
 global path
-#path = "/Users/Julia/Documents/HWs/SeniorDesign/guitTest1/"
-path = "/Users/Julia/source/repos/updateGUI/"
-import page2, page3, page1
+path = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+path = path.replace('C:','')
+path = path.replace('\\','/')
 
 class MyVideoCapture: 
     def __init__(self, video_source=0):
@@ -93,18 +96,18 @@ class Ui_MainWindow(object):
         self.radioButton_2 = QtWidgets.QRadioButton(self.centralwidget)
         self.radioButton_2.setGeometry(QtCore.QRect(360, 370, 82, 17))
         self.radioButton_2.setObjectName("radioButton_2")
-        #password = lineEdit
+        #Name
         self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit.setGeometry(QtCore.QRect(240, 270, 211, 31))
+        self.lineEdit.setGeometry(QtCore.QRect(240, 210, 211, 31))
         self.lineEdit.setObjectName("lineEdit")
-        self.lineEdit.setEchoMode(QtWidgets.QLineEdit.Password)
-        #username = lineEdit_2
+        #Password
         self.lineEdit_2 = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit_2.setGeometry(QtCore.QRect(240, 320, 211, 31))
+        self.lineEdit_2.setGeometry(QtCore.QRect(240, 270, 211, 31))
         self.lineEdit_2.setObjectName("lineEdit_2")
-        #Name = lineEdit_3
+        self.lineEdit_2.setEchoMode(QtWidgets.QLineEdit.Password)
+        #username
         self.lineEdit_3 = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit_3.setGeometry(QtCore.QRect(240, 210, 211, 31))
+        self.lineEdit_3.setGeometry(QtCore.QRect(240, 320, 211, 31))
         self.lineEdit_3.setObjectName("lineEdit_3")
         self.label_10 = QtWidgets.QLabel(self.centralwidget)
         self.label_10.setGeometry(QtCore.QRect(30, 410, 401, 161))
@@ -174,10 +177,6 @@ class Ui_MainWindow(object):
         self._vid = MyVideoCapture(video_source = 0)
 
         #********TODO********** For the button clicks
-        #cancel button
-        self.pushButton_5.clicked.connect(self.goToPage1)
-        #save button
-        self.pushButton_3.clicked.connect(self.addPic)
         #collecting faces button
         self.pushButton_4.clicked.connect(self.addPic)
 
@@ -212,7 +211,7 @@ class Ui_MainWindow(object):
         self.timer.stop()
 
         Name = self.lineEdit_3.text()
-        if self._i < 5:
+        if self._i < 25:
             ret, frame = self._vid.frame()
            # self._photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
             
@@ -225,9 +224,9 @@ class Ui_MainWindow(object):
             self.vlabel.setPixmap(self.qtImage)
             self.vlabel.setGeometry(QtCore.QRect(470, 190, 381, 341))
 
-            IMAGES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+          
             
-            image_array = glob.glob(os.path.join(IMAGES_FOLDER, file_name))
+            image_array = glob.glob(os.path.join(path, file_name))
             if image_array:
                 image = open(image_array[0], 'r+b')
 
@@ -252,13 +251,16 @@ class Ui_MainWindow(object):
             
             
 
-        if self._i == 5:
+        if self._i == 25:
             try:
               del self._vid
             except:
               return 0
+            #save button
+            self.pushButton_3.clicked.connect(self.addPicClicked)
+            #cancel button
+            self.pushButton_5.clicked.connect(self.goToPage1)
 
-            self.addPicClicked()
         #to loop through the process of taking pictures
        
         self.timer2.timeout.connect(self.addPic)
@@ -272,9 +274,9 @@ class Ui_MainWindow(object):
         else:
             self.status = "User"
 
-        self.newUserName = self.lineEdit_2.text()
-        self.newName = self.lineEdit_3.text()
-        self.newPassword = self.lineEdit.text()
+        self.newUserName = self.lineEdit_3.text()
+        self.newName = self.lineEdit.text()
+        self.newPassword = self.lineEdit_2.text()
         addName = self.newName
         addUserName = self.newUserName
         addPwd = self.newPassword
@@ -302,21 +304,20 @@ class Ui_MainWindow(object):
     
 
         # Adds images to person in persongroup
-        IMAGES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)))
     
     
-        for i in range(1,5):
+        for i in range(1,25):
             file_name = path + Name + str(i) + '.jpg'
-            image_array = glob.glob(os.path.join(IMAGES_FOLDER, file_name))
+            image_array = glob.glob(os.path.join(path, file_name))
             print('Adding: ',image_array[0])
             image = open(image_array[0], 'r+b')
             face_client.person_group_person.add_face_from_stream(PERSON_GROUP_ID, new_person.person_id, image)
             image.close()
         print()
    
-        for i in range(1,5):
+        for i in range(1,25):
             file_name = path + Name + str(i) + '.jpg'
-            image_array = glob.glob(os.path.join(IMAGES_FOLDER, file_name))
+            image_array = glob.glob(os.path.join(path, file_name))
 
             try:
                 print('Removing: ',image_array[0])
