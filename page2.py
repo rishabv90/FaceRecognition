@@ -46,6 +46,7 @@ path = "/Users/Julia/source/repos/updateGUI/"
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
+        self.w = MainWindow
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1138, 902)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -103,7 +104,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Manual Login"))
         self.pushButton.setText(_translate("MainWindow", "Submit"))
         self.pushButton_2.setText(_translate("MainWindow", "Face Recognition"))
         self.label_2.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:24pt; font-weight:600;\">Manual Login</span></p></body></html>"))
@@ -113,13 +114,13 @@ class Ui_MainWindow(object):
         self.menuExit.setTitle(_translate("MainWindow", "Exit"))
 
     def goToMainPage(self):#back to main page button
-        MainWindow.close()
-        print("go back to main page")
+        self.w.hide()
         self.window = QtWidgets.QMainWindow()
-        self.ui =  page1.Ui_MainWindow()
+        self.ui = page1.Ui_MainWindow()
         self.ui.setupUi(self.window)
         self.window.show()
-
+        print("go back to main page")
+    
     def submitClicked(self):#if submit button pressed
         print('userName = '+self.lineEdit.text())   #user input username
         print('password = '+self.lineEdit_2.text()) #user input password
@@ -134,9 +135,10 @@ class Ui_MainWindow(object):
             people = face_client.person_group_person.list(PersonGroupObj.name, start=None, top=None, custom_headers=None, raw=False)
             for p in people:
                 data = p.user_data.split(',')
-       
+           
                #0:date, 1:login time, 2: logout time, 3: status, 4: user name, 5: pwd
-                dic[PersonGroupObj.name].append([data[3], data[4],data[5]])
+                dic[PersonGroupObj.name].append([data[3], data[4],data[5], p.name, p.person_id])
+               
 
         keys = list(dic.keys())  
         done = 0
@@ -150,28 +152,21 @@ class Ui_MainWindow(object):
                         #password matches for login                   
                         if (human[0] == "Admin"):
                            # print('logged in as an Admin')
-                            
-                           # MainWindow.close()
-                            #MainWindow.hide()
+                            self.w.hide()
                             self.window = QtWidgets.QMainWindow()
-                            #**********************************TODO: Change human[1] to actual user's 'Name' instead of 'username'**********************************
-                            self.ui =  page5.Ui_MainWindow(human[1])
+                            self.ui = page5.Ui_MainWindow(human[3], human[4])
                             self.ui.setupUi(self.window)
                             self.window.show()
                  
 
                         else:
                             print('logged in as a normal user')
-                            #MainWindow.close()
-                            #MainWindow.hide()
+                            self.w.hide()
                             self.window = QtWidgets.QMainWindow()
-                            #**********************************TODO: Change human[1] to actual user's 'Name' instead of 'username'***********************************
-                            self.ui =  page3.Ui_MainWindow(human[1])
+                            self.ui = page3.Ui_MainWindow(human[3], human[4])
                             self.ui.setupUi(self.window)
                             self.window.show()
-                        
-                        r = Timer(20.0, MainWindow.hide())
-                        r.start()
+
 
                     else: 
                         self.changeToRed()

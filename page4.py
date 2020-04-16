@@ -9,7 +9,8 @@
 
 #from PyQt5 import QtCore, QtGui, QtWidgets
 from PySide2 import QtCore, QtGui, QtWidgets
-from datetime import *
+import datetime
+from threading import Timer
 import asyncio, io, glob, os, sys, time, uuid, requests, cv2
 from urllib.parse import urlparse
 from io import BytesIO
@@ -17,7 +18,7 @@ from PIL import Image, ImageDraw
 from azure.cognitiveservices.vision.face import FaceClient
 from msrest.authentication import CognitiveServicesCredentials
 from azure.cognitiveservices.vision.face.models import TrainingStatusType, Person, SnapshotObjectType, OperationStatusType
-import page2, page3, page1
+import page2, page3, page5
 
 global KEY
 # Set the FACE_SUBSCRIPTION_KEY environment variable with your key as the value.
@@ -45,6 +46,7 @@ global path
 path = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 path = path.replace('C:','')
 path = path.replace('\\','/')
+path = path + '/'
 
 class MyVideoCapture: 
     def __init__(self, video_source=0):
@@ -72,14 +74,18 @@ class MyVideoCapture:
             return (ret, None)
 
 class Ui_MainWindow(object):
-    def __init__(self):
+    def __init__(self, currentAdmin, personID):
+        self.adminName = currentAdmin
         self.newName = ""
         self.newUserName = ""
         self.newPassword = ""
         self.status = ""
-        self._i = 0;
+        self._i = 0
+        self._j = 0
+        self._adminPersonID = personID
 
     def setupUi(self, MainWindow):
+        self.w = MainWindow
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1138, 899)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -145,7 +151,7 @@ class Ui_MainWindow(object):
         self.label_16.setGeometry(QtCore.QRect(30, 610, 251, 61))
         self.label_16.setObjectName("label_16")
         self.label_17 = QtWidgets.QLabel(self.centralwidget)
-        self.label_17.setGeometry(QtCore.QRect(320, 610, 251, 61))
+        self.label_17.setGeometry(QtCore.QRect(320, 610, 651, 61))
         self.label_17.setObjectName("label_17")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -170,15 +176,16 @@ class Ui_MainWindow(object):
 
         self.timer2 = QtCore.QTimer(self.centralwidget)
         self.timer2.setSingleShot(False)
-        self.timer2.setInterval(100)
+        self.timer2.setInterval(1)
         self.timer2.start()
 
 
         self._vid = MyVideoCapture(video_source = 0)
 
-        #********TODO********** For the button clicks
-        #collecting faces button
-        self.pushButton_4.clicked.connect(self.addPic)
+        #collecting faces 
+        self.pushButton_4.clicked.connect(self.click)
+        #cancel button
+        self.pushButton_5.clicked.connect(self.goToAdmin)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -186,17 +193,49 @@ class Ui_MainWindow(object):
         self.pushButton_3.setText(_translate("MainWindow", "Save"))
         self.radioButton.setText(_translate("MainWindow", "Administrative"))
         self.radioButton_2.setText(_translate("MainWindow", "Regular User"))
-        self.label_10.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt;\">Instructions:- </span></p><p><span style=\" font-size:12pt;\">- Please get ready to get 25 clear pictures clcicked. </span></p><p><span style=\" font-size:12pt;\">- Please present a clear view to the camera.</span></p><p><span style=\" font-size:12pt;\">- Please provide variation by Left/Right head movement.</span></p><p><br/></p></body></html>"))
+        self.label_10.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt;\">Instructions:- </span></p><p><span style=\" font-size:12pt;\">- Please get ready to get 25 clear pictures clicked. </span></p><p><span style=\" font-size:12pt;\">- Please present a clear view to the camera.</span></p><p><span style=\" font-size:12pt;\">- Please provide variation by Left/Right head movement.</span></p><p><br/></p></body></html>"))
         self.pushButton_4.setText(_translate("MainWindow", "Begin face Recognition Collection"))
         self.pushButton_5.setText(_translate("MainWindow", "Cancel"))
-        self.label_2.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:24pt; font-weight:600;\">Create New User by Admin</span></p></body></html>"))
+        self.label_2.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:24pt; font-weight:600;\">Create New User by Admin - " + self.adminName +"</span></p></body></html>"))
         self.label_12.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt;\">Enter your name :</span></p></body></html>"))
         self.label_13.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt;\">Enter your password :</span></p></body></html>"))
         self.label_14.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt;\">Enter your username :</span></p></body></html>"))
         self.label_15.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt;\">Enter your Status :</span></p></body></html>"))
         self.label_16.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt;\">Face recognition collection status :</span></p></body></html>"))
-        self.label_17.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt;\">XX/25</span></p></body></html>"))
+        self.label_17.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt;\">0/25</span></p></body></html>"))
         self.menuExit.setTitle(_translate("MainWindow", "Exit"))
+
+    def changeRed(self):
+        _translate = QtCore.QCoreApplication.translate
+        if self.radioButton.isChecked() == False and self.radioButton_2.isChecked() == False:
+            self.label_15.setStyleSheet("font-size:12pt; color:red;")
+        if self.nameField == False:
+            self.label_12.setStyleSheet("font-size:12pt; color:red;")
+            self.lineEdit.setStyleSheet("border: 2px solid red;")
+        if self.pwdField == False:
+            self.label_13.setStyleSheet("font-size:12pt; color:red;")
+            self.lineEdit_2.setStyleSheet("border: 2px solid red;")
+        if self.userField == False:
+            self.label_14.setStyleSheet("font-size:12pt; color:red;")
+            self.lineEdit_3.setStyleSheet("border: 2px solid red;")
+        self.label_17.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt; color:red;\">Please enter all the required fields first</span></p></body></html>"))
+      
+        t = Timer(2.0, self.changeBlack)
+        t.start()
+
+    def changeBlack(self):
+        self.nameField = True
+        self.pwdField = True
+        self.userField = True
+        _translate = QtCore.QCoreApplication.translate
+        self.lineEdit.setStyleSheet("border: 1px solid black;")
+        self.lineEdit_2.setStyleSheet("border: 1px solid black;")
+        self.lineEdit_3.setStyleSheet("border: 1px solid black;")
+        self.label_12.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt; color:black;\">Enter your name :</span></p></body></html>"))
+        self.label_13.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt; color:black;\">Enter your password :</span></p></body></html>"))
+        self.label_14.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt; color:black;\">Enter your username :</span></p></body></html>"))
+        self.label_15.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt; color:black;\">Enter your Status :</span></p></body></html>"))
+        self.label_17.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt; color:black;\">0/25</span></p></body></html>"))
 
     def showVideo(self):
         file_name = path + "temp" + '.jpg'
@@ -204,66 +243,88 @@ class Ui_MainWindow(object):
         cv2.imwrite(file_name, frame)
         self.qtImage = QtGui.QPixmap(file_name)
         self.vlabel.setPixmap(self.qtImage)
-        self.vlabel.setGeometry(QtCore.QRect(470, 190, 381, 341))
+        self.vlabel.setGeometry(QtCore.QRect(470, 190, 681, 341))
         return
 
-    def addPic(self):
-        self.timer.stop()
+    def click(self):
+        self.nameField = True
+        self.pwdField = True
+        self.userField = True
+     
+        if self.lineEdit.text() == "":
+            self.nameField = False
+        if self.lineEdit_2.text() == "":
+            self.pwdField = False
+        if self.lineEdit_3.text() == "":
+            self.userField = False
 
-        Name = self.lineEdit_3.text()
+        if self.nameField == True and self.pwdField == True and self.userField == True and (self.radioButton.isChecked() or self.radioButton_2.isChecked()):
+            self.timer2.timeout.connect(self.addPic)
+            self.timer.stop()
+        else:
+            self.changeRed()
+        
+
+    def addPic(self):
+
+        Name = self.lineEdit.text()
+
         if self._i < 25:
             ret, frame = self._vid.frame()
-           # self._photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
-            
-            
+           
             file_name = path + Name + str(self._i) + '.jpg'
 
-            print ('Creating...' + file_name)
+            self.label_17.clear()
+            html = "<html><head/><body><p><span style=\" font-size:12pt;\"><b>" + str(self._i + 1) + "</b>/25</span><span style=\"font-size:10pt; color:red\"> (Move closer if the number is not increasing)</span></p></body></html>"
+            self.label_17.setText(html)
             cv2.imwrite(file_name, frame)
             self.qtImage = QtGui.QPixmap(file_name)
             self.vlabel.setPixmap(self.qtImage)
-            self.vlabel.setGeometry(QtCore.QRect(470, 190, 381, 341))
+            self.vlabel.setGeometry(QtCore.QRect(470, 190, 681, 341))
 
-          
-            
-            image_array = glob.glob(os.path.join(path, file_name))
-            if image_array:
-                image = open(image_array[0], 'r+b')
+            if self._j % 25 == 0:
+                image_array = glob.glob(os.path.join(path, file_name))
+                if image_array:
+                    image = open(image_array[0], 'r+b')
 
-                # Detect faces
-                faces = face_client.face.detect_with_stream(image, return_face_id=True, return_face_landmarks=True, return_face_attributes=['age', 'gender', 'headPose', 'smile', 'facialHair', 'glasses', 'emotion'], recognition_model='recognition_02', return_recognition_model=False, detection_model='detection_01', custom_headers=None, raw=False, callback=None)
-                if faces != []:
-                    rectanle = faces[0].face_rectangle
+                    # Detect faces
+                    faces = face_client.face.detect_with_stream(image, return_face_id=True, return_face_landmarks=True, return_face_attributes=['age', 'gender', 'headPose', 'smile', 'facialHair', 'glasses', 'emotion'], recognition_model='recognition_02', return_recognition_model=False, detection_model='detection_01', custom_headers=None, raw=False, callback=None)
+                    print(len(faces))
+                    print(faces)
+                    if faces != [] and len(faces) < 2:
+                        rectanle = faces[0].face_rectangle
+                        if rectanle.height > 200 and rectanle.width> 200:
+                            #only keep picture if race rectangle is bigger than 200 x 200 (azure reccomends)
 
-                    if ((rectanle.height > 200) and (rectanle.width> 200)):
-                        #only keep picture if race rectangle is bigger than 200 x 200 (azure reccomends)
+                            self._i+=1
 
-                        self._i+=1
-
+                        else:
+                          
+                            #remove image 
+                            image.close()
+                            os.remove(file_name)
                     else:
                         #remove image 
                         image.close()
                         os.remove(file_name)
-                else:
-                    #remove image 
-                    image.close()
-                    os.remove(file_name)
             
             
 
         if self._i == 25:
+            self.label_17.clear()
+            self.label_17.setGeometry(QtCore.QRect(320, 610, 451, 91))
+            doneText = "<html><head/><body><p><span style=\" font-size:12pt; color:green\"><b> DONE</b><br />Please click <b><u>Save</u></b> to continue.<br />If you want to cancel the registration, just click <b><u>Cancel</u></b>.</span></p></body></html>"
+            self.label_17.setText(doneText)
             try:
               del self._vid
             except:
               return 0
             #save button
             self.pushButton_3.clicked.connect(self.addPicClicked)
-            #cancel button
-            self.pushButton_5.clicked.connect(self.goToPage1)
+            
 
         #to loop through the process of taking pictures
-       
-        self.timer2.timeout.connect(self.addPic)
+        self._j+=1
         return
 
     def addPicClicked(self):
@@ -284,10 +345,9 @@ class Ui_MainWindow(object):
 
         Name = addName
         data = ''
-        t = datetime.now().strftime('%m/%d/%Y,%H:%M:%S,')
-        t2 = datetime.now().strftime('%H:%M:%S,')
+        t = '--------,' + '--------,'
+        t2 = '--------,'
         data = t + t2 + addStatus +',' +addUserName+ ','+addPwd 
-        print(data)
         self.statusbar.clearMessage()
         self.statusbar.setStyleSheet("color: blue; font-size: 15pt;")
         self.statusbar.showMessage(data)
@@ -296,7 +356,6 @@ class Ui_MainWindow(object):
         new_person = face_client.person_group_person.create(PERSON_GROUP_ID, name= Name, user_data=data, custom_headers=None, raw=False)
         new_person.name = Name
         new_person.user_data = data
-        print(new_person.user_data)
         '''
         Detect faces and register to correct person
         '''
@@ -313,7 +372,6 @@ class Ui_MainWindow(object):
             image = open(image_array[0], 'r+b')
             face_client.person_group_person.add_face_from_stream(PERSON_GROUP_ID, new_person.person_id, image)
             image.close()
-        print()
    
         for i in range(1,25):
             file_name = path + Name + str(i) + '.jpg'
@@ -341,11 +399,12 @@ class Ui_MainWindow(object):
             print("Training status: {}.".format(training_status.status))
             print()
             if (training_status.status is TrainingStatusType.succeeded):
-                if (self.status == "Admin"):
-                    self.goToAdmin()
+                self.goToAdmin()
+                #if (self.status == "Admin"):
+                #    self.goToAdmin()
 
-                else:
-                    self.goToNormal()
+                #else:
+                #    self.goToNormal()
           
                 return
                 
@@ -353,35 +412,21 @@ class Ui_MainWindow(object):
                 sys.exit('Training the person group has failed.')
         return
         
-
-    #**********TODO:Not yet implemented**********
-    def goToPage1(self):#if the cancel button is clicked, go back to the main facial recognition page
-        MainWindow.close()
-        print("logout")
-        self.window = QtWidgets.QMainWindow()
-        self.ui = page1.Ui_MainWindow()
-        self.ui.setupUi(self.window)
-        self.window.show()   
   
     def goToAdmin(self): #if the submit button is clicked and is registered as an 'admin', then go to the admin page
-        MainWindow.hide()
-        self.window = QtWidgets.QMainWindow()
-        self.ui = page5.Ui_MainWindow(self.newName)
-        self.ui.setupUi(self.window)
-        self.window.show()
+        self.w.hide()
+        print("Go to add user page")
+        self.MainWindow = QtWidgets.QMainWindow()
+        self.ui =  page5.Ui_MainWindow(self.adminName, self._adminPersonID)
+        self.ui.setupUi(self.MainWindow)
+        self.MainWindow.show()
 
-    def goToNormal(self): #if the submit button is clicked and is registered as a 'normal', then go to the normal user page
-        MainWindow.hide()
-        self.window = QtWidgets.QMainWindow()
-        self.ui = page3.Ui_MainWindow(self.newName)
-        self.ui.setupUi(self.window)
-        self.window.show()
 
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
+    ui = Ui_MainWindow("Empty", "Admin PersonID")
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())

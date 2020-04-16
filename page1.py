@@ -23,9 +23,6 @@ import time
 import page2, page3, page5
 
 global KEY
-# Set the FACE_SUBSCRIPTION_KEY environment variable with your key as the value.
-# This key will serve all examples in this document.
-#KEY = os.environ['FACE_SUBSCRIPTION_KEY']
 KEY = '12f952f3b226421aa2019ab14740b123'
 
 # Set the FACE_ENDPOINT environment variable with the endpoint from your Face service in Azure.
@@ -191,6 +188,7 @@ class MyVideoCapture:
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
+        self.w = MainWindow
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1137, 922)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -226,6 +224,7 @@ class Ui_MainWindow(object):
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
+
         self.menubar.addAction(self.menuExit.menuAction())
 
         self.pushButton.clicked.connect(self.goToManual)
@@ -238,7 +237,7 @@ class Ui_MainWindow(object):
         self.flag = False
         self.timer = QtCore.QTimer(self.centralwidget)
         self.timer.setSingleShot(False)
-        self.timer.setInterval(100) # in milliseconds, so 5000 = 5 seconds
+        self.timer.setInterval(1) # in milliseconds, so 5000 = 5 seconds
 
        
 
@@ -248,7 +247,7 @@ class Ui_MainWindow(object):
         
         self.timer2 = QtCore.QTimer(self.centralwidget)
         self.timer2.setSingleShot(False)
-        self.timer2.setInterval(100)
+        self.timer2.setInterval(1)
         self.timer2.start()
 
         self.timer.start()
@@ -257,7 +256,8 @@ class Ui_MainWindow(object):
     def wakeUp(self):
         
         now = datetime.now().time()
-        if now.hour<17  and now.hour>=7:
+        #change time here
+        if now.hour<20 and now.hour>=7:
             self.label_6.setStyleSheet("font-size:12pt; color: green;")
             self.label_6.setText("Please Instruct system to begin Facial Recognition by saying <b>'Wake Up'</b>")
             time.sleep(3)
@@ -284,10 +284,26 @@ class Ui_MainWindow(object):
                 print("Speech Recognition canceled: {}".format(cancellation_details.reason))
                 if cancellation_details.reason == speechsdk.CancellationReason.Error:
                     print("Error details: {}".format(cancellation_details.error_details))
+
+        else:
+            msg = QtWidgets.QMessageBox()
+            msg.setWindowTitle("Error")
+            msg.setIcon(msg.Critical)
+            msg.setText("It is not operating hours, please try again between 7:00am to 5:00pm.")
+            msgX = msg.exec_()
+            print("Error: It is not the operating hours")
         return
     def goToManual(self): #direct to manual login page
         #MainWindow.close()
-        MainWindow.hide()
+        
+        try: 
+            self.timer2.stop()
+            self.timer.stop()
+            del self.vid
+        except:
+            print("Camera not on, Timer not on")
+       
+        self.w.hide()
         print("Go to manual login page")
         self.window = QtWidgets.QMainWindow()
         self.ui = page2.Ui_MainWindow()
@@ -331,17 +347,17 @@ class Ui_MainWindow(object):
             del self.vid
             if (self._accountType == 'Admin'):
                 #MainWindow.close()
-                MainWindow.hide()
+                self.w.hide()
                 self.window = QtWidgets.QMainWindow()
-                self.ui = page5.Ui_MainWindow(self._identifiedPerson)
+                self.ui = page5.Ui_MainWindow(self._identifiedPerson, self._person_id)
                 self.ui.setupUi(self.window)
                 self.window.show()
      
             else:
                 #MainWindow.close()
-                MainWindow.hide()
+                self.w.hide()
                 self.window = QtWidgets.QMainWindow()
-                self.ui = page3.Ui_MainWindow(self._identifiedPerson)
+                self.ui = page3.Ui_MainWindow(self._identifiedPerson, self._person_id)
                 self.ui.setupUi(self.window)
                 self.window.show()
             return

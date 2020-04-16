@@ -8,14 +8,36 @@
 # WARNING! All changes made in this file will be lost!
 # Normal user's logged in successfully page
 
+#from PySide2 import QtCore, QtGui, QtWidgets
 from PySide2 import QtCore, QtGui, QtWidgets
+from azure.cognitiveservices.vision.face import FaceClient
+from msrest.authentication import CognitiveServicesCredentials
+from azure.cognitiveservices.vision.face.models import TrainingStatusType, Person, SnapshotObjectType, OperationStatusType
+from datetime import *
+import time
+global KEY
+KEY = '12f952f3b226421aa2019ab14740b123'
+
+# Set the FACE_ENDPOINT environment variable with the endpoint from your Face service in Azure.
+# This endpoint will be used in all examples in this quickstart.
+global ENDPOINT
+ENDPOINT = "https://testface19025.cognitiveservices.azure.com"
+
+global PERSON_GROUP_ID
+PERSON_GROUP_ID = 'test'
+
+global face_client
+face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
+
 import page1
 
 class Ui_MainWindow(object):
-    def __init__(self, name):
+    def __init__(self, name, personID):
         self._name = name 
+        self._person_id = personID
 
     def setupUi(self, MainWindow):
+        self.w = MainWindow
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1138, 902)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -51,6 +73,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        self.pushButton_2.clicked.connect(self.goToPage1)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -63,8 +86,15 @@ class Ui_MainWindow(object):
         self.menuExit.setTitle(_translate("MainWindow", "Exit"))
 
     def goToPage1(self):#logout button
-        #MainWindow.close()
-        MainWindow.hide()
+        person = face_client.person_group_person.get('test',self._person_id)
+        data = person.user_data.split(',')
+        print(data)
+
+        newData = data[0] +','+ data[1] +  datetime.now().strftime(',%H:%M:%S,')  + data[-3] + ',' + data[-2] + ',' + data[-1]
+        print(newData)      
+        face_client.person_group_person.update(PERSON_GROUP_ID,self._person_id,user_data = newData)
+
+        self.w.hide()
         print("go back to main page")
         self.MainWindow = QtWidgets.QMainWindow()
         self.ui =  page1.Ui_MainWindow()
@@ -72,11 +102,12 @@ class Ui_MainWindow(object):
         self.MainWindow.show()
 
 
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow("Empty")
+    ui = Ui_MainWindow("EmptyName", "Person_ID")
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())

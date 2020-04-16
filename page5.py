@@ -8,8 +8,10 @@
 # WARNING! All changes made in this file will be lost!
 # After admin logged in 
 
+#from PyQt5 import QtCore, QtGui, QtWidgets
 from PySide2 import QtCore, QtGui, QtWidgets
 from datetime import *
+from threading import Timer
 import asyncio, io, glob, os, sys, time, uuid, requests, cv2
 from urllib.parse import urlparse
 from io import BytesIO
@@ -42,27 +44,37 @@ global PERSON_GROUP_ID
 PERSON_GROUP_ID = 'test'
 
 global path
-path = "/Users/Julia/source/repos/updateGUI/"
+path = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+path = path.replace('C:','')
+path = path.replace('\\','/')
+path = path + '/'
 
 class Ui_MainWindow(object):
-    def __init__(self, name):
+    def __init__(self, name, personID):
         self._name = name
+        self._person_id = personID
+       
 
     def setupUi(self, MainWindow):
+        self.w = MainWindow
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1136, 900)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         #PUSH BUTTONS
+        #loggout
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_2.setGeometry(QtCore.QRect(920, 780, 151, 41))
         self.pushButton_2.setObjectName("pushButton_2")
+        #delete
         self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_3.setGeometry(QtCore.QRect(260, 730, 151, 41))
         self.pushButton_3.setObjectName("pushButton_3")
+        #modify
         self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_4.setGeometry(QtCore.QRect(780, 460, 151, 41))
         self.pushButton_4.setObjectName("pushButton_4")
+        #new user button
         self.pushButton_5 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_5.setGeometry(QtCore.QRect(730, 780, 151, 41))
         self.pushButton_5.setObjectName("pushButton_5")
@@ -122,33 +134,10 @@ class Ui_MainWindow(object):
         self.treeWidget.setObjectName("treeWidget")
         self.treeWidget.setColumnCount(5)
         self.treeWidget.setHeaderLabels(["Name",'Account Type', 'Login time', 'Logout time', 'Date'])
-        person_groups = face_client.person_group.list(start=None, top=1000, return_recognition_model=False, custom_headers=None, raw=False)
-        dic = {}
-
-        for PersonGroupObj in person_groups:
-            dic[PersonGroupObj.name] = []
-            people = face_client.person_group_person.list(PersonGroupObj.name, start=None, top=None, custom_headers=None, raw=False)
-            for p in people:
-                print('DATA::::::::::::::::::: ' + p.user_data)
-
-                data = p.user_data.split(',')
-                print(data)
-                dic[PersonGroupObj.name].append([p.name,data[0],data[1],data[2],data[3],data[4],data[5]])
-        keys= list(dic.keys())
-
-       
-        for i in range(0,len(dic[keys[0]])):
-            print(type(i))
-            row = QtWidgets.QTreeWidgetItem(self.treeWidget)
-            row.setText(0,dic[keys[0]][i][0])
-            row.setText(1,dic[keys[0]][i][4])
-            row.setText(2,dic[keys[0]][i][2])
-            row.setText(3,dic[keys[0]][i][3])
-            row.setText(4,dic[keys[0]][i][1])
-
+      
+        self.updateTable()
            
 
-        print(dic)
         self.verticalScrollBar = QtWidgets.QScrollBar(self.centralwidget)
         self.verticalScrollBar.setGeometry(QtCore.QRect(630, 160, 20, 551))
         self.verticalScrollBar.setOrientation(QtCore.Qt.Vertical)
@@ -166,14 +155,22 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.menubar.addAction(self.menuExit.menuAction())
 
+        self.pushButton_2.clicked.connect(self.loggout)
+        self.pushButton_3.clicked.connect(self.delete)
         self.pushButton_5.clicked.connect(self.goAddUser)
-
+        self.pushButton_4.clicked.connect(self.modify)
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        
+        self.timer = QtCore.QTimer(self.centralwidget)
+        self.timer.setSingleShot(False)
+        self.timer.setInterval(1)
+        self.timer.start()
+        self.timer.timeout.connect(self.disableTyping)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Users List"))
         self.pushButton_2.setText(_translate("MainWindow", "Logout"))
         self.pushButton_3.setText(_translate("MainWindow", "Delete"))
         self.pushButton_4.setText(_translate("MainWindow", "Modify"))
@@ -188,21 +185,157 @@ class Ui_MainWindow(object):
         self.label_11.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt;\">Enter new password :</span></p></body></html>"))
         self.label_12.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt;\">Enter new status :</span></p></body></html>"))
         self.menuExit.setTitle(_translate("MainWindow", "Exit"))
+        
+    def disableTyping(self):
+        if self.treeWidget.selectedItems() != []:
+            self.lineEdit.setReadOnly(False)
+            self.lineEdit_4.setReadOnly(False)
+            self.lineEdit_5.setReadOnly(False)
+            self.radioButton.setCheckable(True)
+            self.radioButton_2.setCheckable(True)
+        else:
+            self.lineEdit.setReadOnly(True)
+            self.lineEdit_4.setReadOnly(True)
+            self.lineEdit_5.setReadOnly(True)
+            self.radioButton.setCheckable(False)
+            self.radioButton_2.setCheckable(False)
+
+        return
+    def updateTable(self):
+        self.treeWidget.clear()
+        person_groups = face_client.person_group.list(start=None, top=1000, return_recognition_model=False, custom_headers=None, raw=False)
+        self.dic = {}
+        self.totalPeople = 0;
+        for PersonGroupObj in person_groups:
+            self.dic[PersonGroupObj.name] = []
+            people = face_client.person_group_person.list(PersonGroupObj.name, start=None, top=None, custom_headers=None, raw=False)
+            for p in people:
+                self.totalPeople = self.totalPeople + 1;
+                data = p.user_data.split(',')
+                self.dic[PersonGroupObj.name].append([p.name,data[0],data[1],data[2],data[3],data[4],data[5],p.person_id])
+        keys= list(self.dic.keys())
+
+       
+        for i in range(0,len(self.dic[keys[0]])):
+            row = QtWidgets.QTreeWidgetItem(self.treeWidget)
+            row.setText(0,self.dic[keys[0]][i][0])
+            row.setText(1,self.dic[keys[0]][i][4])
+            row.setText(2,self.dic[keys[0]][i][2])
+            row.setText(3,self.dic[keys[0]][i][3])
+            row.setText(4,self.dic[keys[0]][i][1])
+        return
+    def modify(self):
+        name = self.lineEdit.text()
+        username = self.lineEdit_4.text()
+        password = self.lineEdit_5.text()
+        count = 0
+        if(self.radioButton.isChecked()):
+            count += 1
+            status = "Admin"
+        elif self.radioButton_2.isChecked():
+            count += 1
+            status = 'User'
+        else:
+            status = None
+        selections = self.treeWidget.selectedItems()
+        indexs = self.treeWidget.selectedIndexes()
+        if selections != [] and indexs != []:
+            person = selections[0].text(indexs[0].row())
+            person_id = self.dic['test'][indexs[0].row()][-1]
+            
+            if name != '':    
+                count += 1
+                person = face_client.person_group_person.get('test',person_id)
+                face_client.person_group_person.update(PERSON_GROUP_ID,person_id,name = name)
+            if status != None:
+                count += 1
+                person = face_client.person_group_person.get('test',person_id)
+                data = person.user_data.split(',')
+                newData = data[0] + ',' + data[1] + ',' + data[2] + ',' + status + ',' + data[4] + ',' + data[5]
+                face_client.person_group_person.update(PERSON_GROUP_ID,person_id,user_data = newData)
+            if username != '':
+                count += 1
+                person = face_client.person_group_person.get('test',person_id)
+                data = person.user_data.split(',')
+                newData = data[0] + ',' + data[1] + ',' + data[2] + ',' + data[3] + ',' + username + ',' + data[5]
+                face_client.person_group_person.update(PERSON_GROUP_ID,person_id,user_data = newData)
+            if password != '':
+                count += 1
+                person = face_client.person_group_person.get('test',person_id)
+                data = person.user_data.split(',')
+                newData = data[0] + ',' + data[1] + ',' + data[2] + ',' + data[3] + ',' + data[4] + ',' + password
+                face_client.person_group_person.update(PERSON_GROUP_ID,person_id,user_data = newData)
+
+        self.updateTable()
+        if (count != 0):
+            self.statusbar.clearMessage()
+            self.statusbar.setStyleSheet("color:green; font-size:14pt;")
+            self.statusbar.showMessage("Successfully modified selected user.")
+
+        else:
+            self.statusbar.clearMessage()
+            self.statusbar.setStyleSheet("color:red; font-size:14pt;")
+            self.statusbar.showMessage("Please select a user from the user list to modify.")
+        return
+    def delete(self):
+        people = []
+        person_group_id = 'test'
+        selections = self.treeWidget.selectedItems()
+        indexs = self.treeWidget.selectedIndexes()
+        
+        person = (selections[0].text(indexs[0].row()))
+
+        print("Total" + str(self.totalPeople))
+        if self.totalPeople == 1:
+            self.statusbar.clearMessage()
+            self.statusbar.setStyleSheet("color:red; font-size:14pt;")
+            self.statusbar.showMessage("At least one user need to be in the database!")
+
+        else:
+        
+            person_id = self.dic[person_group_id][indexs[0].row()][-1]
+            if person_id != self._person_id:
+                face_client.person_group_person.delete(person_group_id, person_id, custom_headers=None, raw=False)
+            else:
+                self.statusbar.clearMessage()
+                self.statusbar.setStyleSheet("color:red; font-size:14pt;")
+                self.statusbar.showMessage("Don't delete yourself!")
+
+        
+        self.updateTable()
+        return
+    
+        
+    def loggout(self):
+        person = face_client.person_group_person.get('test',self._person_id)
+        data = person.user_data.split(',')
+
+        newData = data[0] +','+ data[1] +  datetime.now().strftime(',%H:%M:%S,')  + data[-3] + ',' + data[-2] + ',' + data[-1]
+        face_client.person_group_person.update(PERSON_GROUP_ID,self._person_id,user_data = newData)
+        self.w.hide()
+        print("go back to main page")
+        self.MainWindow = QtWidgets.QMainWindow()
+        self.ui =  page1.Ui_MainWindow()
+        self.ui.setupUi(self.MainWindow)
+        self.MainWindow.show()
 
     def goAddUser(self):
-        MainWindow.hide()
-        print("Go to manual login page")
-        self.window = QtWidgets.QMainWindow()
-        self.ui = page4.Ui_MainWindow()
-        self.ui.setupUi(self.window)
-        self.window.show()
+        self.w.hide()
+        print("Go to add user page")
+        self.MainWindow = QtWidgets.QMainWindow()
+        self.ui =  page4.Ui_MainWindow(self._name, self._person_id)
+        self.ui.setupUi(self.MainWindow)
+        self.MainWindow.show()
         return 0
 
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow("Empty")
+    ui = Ui_MainWindow("Empty", "Person_ID")
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
+
+
+   
