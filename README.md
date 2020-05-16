@@ -1,2 +1,2 @@
 # FaceRecognition
-A commercial security program which wokrs via facial recognition for employee authentication.
+A commercial security program which works via facial recognition for employee authentication.
